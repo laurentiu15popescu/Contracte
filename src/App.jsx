@@ -98,6 +98,7 @@ function App() {
   const [anafSyncAt, setAnafSyncAt] = useState(null);
   const backupFileRef = useRef(null);
   const fileRef = useRef(null);
+  const searchInputRef = useRef(null);
   const locationTimerRef = useRef(null);
   const [currentContractId, setCurrentContractId] = useState(stored?.currentContractId || null);
   const [savedContracts, setSavedContracts] = useState([]);
@@ -120,6 +121,17 @@ function App() {
   useEffect(() => {
     saveLocal({ clientData, anexe });
   }, [clientData, anexe]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Auto-completează numărul contractului la prima încărcare dacă lipsește
   const didInitNrRef = useRef(false);
@@ -556,6 +568,7 @@ function App() {
               type="button"
               className="nav-del"
               title="Șterge anexa"
+              aria-label="Șterge anexa"
               onClick={(e) => {
                 e.stopPropagation();
                 if (!confirm(`Ștergi Anexa ${i + 1}?`)) return;
@@ -626,6 +639,7 @@ function App() {
           </div>
           <div className="topbar-search">
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Caută client, contract, CUI…"
               value={search}

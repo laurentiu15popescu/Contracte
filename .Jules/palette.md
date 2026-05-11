@@ -1,0 +1,3 @@
+## 2025-02-23 - Keyboard Shortcuts and Missing ARIA Labels
+**Learning:** Found an existing visual hint (`⌘K`) for a global search input that wasn't actually backed by functionality. Additionally, discovered that icon-only buttons for deleting items lacked `aria-label`s, breaking accessibility. Also discovered a few linting issues (`no-useless-escape`) on un-escaped regexes during verification that blocked the build.
+**Action:** Implemented the keyboard shortcut using a document-level event listener inside a `useEffect`, and added the missing `aria-label="Șterge anexa"` to the delete button. When implementing small improvements, always ensure the lint/build passes to fix small pre-existing warnings if necessary.

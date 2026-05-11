@@ -43,7 +43,7 @@ export const normalizeDate = (s) => {
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
   if (iso) return `${iso[3]}-${iso[2]}-${iso[1]}`;
   // various separators: / . - space
-  const m = /^(\d{1,2})[\/.\-\s](\d{1,2})[\/.\-\s](\d{2,4})$/.exec(trimmed);
+  const m = /^(\d{1,2})[/.\-\s](\d{1,2})[/.\-\s](\d{2,4})$/.exec(trimmed);
   if (!m) return trimmed;
   const dd = m[1].padStart(2, "0");
   const mm = m[2].padStart(2, "0");
@@ -359,7 +359,7 @@ export const fetchBnrRate = async (currency, dmyDate) => {
     if (!codeM) continue;
     const code = codeM[1];
     if (code === "RON") continue;
-    const numM = /<td[^>]*>\s*([0-9]+[\.,][0-9]{2,6})\s*<\/td>/.exec(row[1]);
+    const numM = /<td[^>]*>\s*([0-9]+[.,][0-9]{2,6})\s*<\/td>/.exec(row[1]);
     if (!numM) continue;
     const v = Number(numM[1].replace(",", "."));
     if (v > 0 && !map[code]) map[code] = v;
@@ -368,7 +368,7 @@ export const fetchBnrRate = async (currency, dmyDate) => {
   if (!map[cur]) throw new Error(`Nu am găsit cursul ${cur} în pagină`);
   const rate = map[cur];
   // încearcă să extragi data publicării; dacă nu, folosește data cerută
-  const dm = /curs\s+(?:valutar\s+)?BNR[^0-9]{0,20}(\d{2})[.\/-](\d{2})[.\/-](\d{4})/i.exec(html);
+  const dm = /curs\s+(?:valutar\s+)?BNR[^0-9]{0,20}(\d{2})[./-](\d{2})[./-](\d{4})/i.exec(html);
   const date = dm ? `${dm[1]}-${dm[2]}-${dm[3]}` : dmyDate;
   return { rate, date, currency: cur };
 };
