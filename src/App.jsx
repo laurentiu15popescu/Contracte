@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import Contract from "./Contract";
-import Anexa from "./Anexa";
+import Contract from "./FluxContract/Contract";
+import Anexa from "./FluxContract/Anexa";
 import {
   addDays,
   bankFromIban,
@@ -24,15 +24,15 @@ import {
   todayDmy,
   validateCUI,
   validateIBAN,
-} from "./utils";
-import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, getContract, deleteContract } from "./db";
-import { extractFromDocx } from "./importDocx";
-import { db } from "./firebase";
+} from "./shared/utils";
+import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, getContract, deleteContract } from "./shared/db";
+import { extractFromDocx } from "./Sistem/importDocx";
+import { db } from "./shared/firebase";
 import { doc, setDoc, deleteDoc, getDocs, getDoc, query, where, collection, serverTimestamp } from "firebase/firestore";
 import Biblioteca from "./Biblioteca/Biblioteca";
-import Dashboard from "./Dashboard";
-import Rapoarte from "./Rapoarte";
-import HubPage from "./HubPage";
+import Dashboard from "./Dashboard/Dashboard";
+import Rapoarte from "./Rapoarte/Rapoarte";
+import HubPage from "./shared/HubPage";
 
 /* ---------- empty factories (neschimbate) ---------- */
 const emptyClient = () => ({

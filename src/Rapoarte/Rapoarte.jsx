@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs, doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "./firebase";
-import "./Dashboard.css";
+import { db } from "../shared/firebase";
+import "../Dashboard/Dashboard.css";
 import "./Rapoarte.css";
 
 /* ---------- Helpers ---------- */

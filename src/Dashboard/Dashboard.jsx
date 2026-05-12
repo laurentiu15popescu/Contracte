@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "./firebase";
+import { db } from "../shared/firebase";
 import "./Dashboard.css";
 
 const fmt = (n) => new Intl.NumberFormat("ro-RO").format(Math.round(Number(n) || 0));

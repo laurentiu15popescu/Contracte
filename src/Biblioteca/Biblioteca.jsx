@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { collection, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
-import { db } from "../firebase";
-import { getStatusMapByNumar, setContractStatusByNumar } from "../db";
+import { db } from "../shared/firebase";
+import { getStatusMapByNumar, setContractStatusByNumar } from "../shared/db";
 import Contracte from "./Contracte";
 import Clienti from "./Clienti";
 

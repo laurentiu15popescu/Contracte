@@ -1,4 +1,4 @@
-import "./Dashboard.css";
+import "../Dashboard/Dashboard.css";
 
 export default function HubPage({ eyebrow, title, subtitle, cards }) {
   return (
