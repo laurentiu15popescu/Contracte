@@ -25,14 +25,14 @@ import {
   validateCUI,
   validateIBAN,
 } from "./utils";
-import {
-  saveContract,
-  listContracte,
-  getContract,
-  deleteContract,
-  exportAll,
-  importAll,
-} from "./db";
+import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, getContract, deleteContract } from "./db";
+import { extractFromDocx } from "./importDocx";
+import { db } from "./firebase";
+import { doc, setDoc, deleteDoc, getDocs, getDoc, query, where, collection, serverTimestamp } from "firebase/firestore";
+import Biblioteca from "./Biblioteca/Biblioteca";
+import Dashboard from "./Dashboard";
+import Rapoarte from "./Rapoarte";
+import HubPage from "./HubPage";
 
 /* ---------- empty factories (neschimbate) ---------- */
 const emptyClient = () => ({
@@ -56,6 +56,7 @@ const emptyEvent = () => ({
   dataEveniment: "",
   locatie: "",
   zilePredare: "30",
+  zileIncasare: "10",
   observatii: "",
 });
 const emptyBudget = () => ({
@@ -82,12 +83,31 @@ const calcDataPredare = (dataEveniment, zilePredare) => {
   return addDays(dataEveniment, 1 + Number(zilePredare));
 };
 
+// adaugă N zile lucrătoare la o dată dmy (zz-ll-aaaa) și returnează dmy
+const addBusinessDaysDmy = (dmy, n) => {
+  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(dmy || "");
+  if (!m || !n) return "";
+  const d = new Date(`${m[3]}-${m[2]}-${m[1]}`);
+  let added = 0;
+  while (added < Number(n)) {
+    d.setDate(d.getDate() + 1);
+    const wd = d.getDay();
+    if (wd !== 0 && wd !== 6) added++;
+  }
+  return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+};
+
+const calcTermenIncasare = (dataEveniment, zilePredare, zileIncasare) => {
+  const predare = calcDataPredare(dataEveniment, zilePredare);
+  return predare ? addBusinessDaysDmy(predare, zileIncasare) : "";
+};
+
 const fmt = (n) =>
   new Intl.NumberFormat("ro-RO").format(Number(n) || 0);
 
 function App() {
   const stored = loadLocal();
-  const [step, setStep] = useState("client");
+  const [step, setStep] = useState("dashboard");
   const [showPreview, setShowPreview] = useState(false);
   const [printSelection, setPrintSelection] = useState("all");
   const [clientData, setClientData] = useState(stored?.clientData || emptyClient());
@@ -98,28 +118,22 @@ function App() {
   const [anafSyncAt, setAnafSyncAt] = useState(null);
   const backupFileRef = useRef(null);
   const fileRef = useRef(null);
+  const docFileRef = useRef(null);
   const locationTimerRef = useRef(null);
   const [currentContractId, setCurrentContractId] = useState(stored?.currentContractId || null);
-  const [savedContracts, setSavedContracts] = useState([]);
+  const [drafturi, setDrafturi] = useState([]);
   const [search, setSearch] = useState("");
   const [bnrConv, setBnrConv] = useState({ currency: "EUR", rate: null, date: "", loading: false, error: "" });
-
-  /* ---------- DB sync ---------- */
-  const refreshSavedContracts = async () => {
-    try {
-      setSavedContracts(await listContracte(search));
-    } catch (e) {
-      console.warn("DB:", e.message);
-    }
-  };
-  useEffect(() => {
-    if (step === "salvate") refreshSavedContracts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, search]);
 
   useEffect(() => {
     saveLocal({ clientData, anexe });
   }, [clientData, anexe]);
+
+  useEffect(() => {
+    if (step === "hub-flux") {
+      listDrafturi().then(setDrafturi).catch(() => setDrafturi([]));
+    }
+  }, [step]);
 
   // Auto-completează numărul contractului la prima încărcare dacă lipsește
   const didInitNrRef = useRef(false);
@@ -155,35 +169,81 @@ function App() {
 
   /* ---------- Actions ---------- */
   const handleSaveToDb = async () => {
+    const errs = [];
+    let localOk = false;
+    let cloudOk = false;
+
     try {
       const id = await saveContract({ clientData, anexe, id: currentContractId });
       setCurrentContractId(id);
-      alert(currentContractId ? "Contract actualizat." : "Contract salvat în DB.");
+      localOk = true;
     } catch (e) {
-      alert("Eroare la salvare: " + e.message);
+      errs.push("Local: " + e.message);
+    }
+
+    try {
+      await salveazaContract({ silent: true });
+      cloudOk = true;
+    } catch (e) {
+      errs.push("Cloud: " + e.message);
+    }
+
+    if (localOk && cloudOk) {
+      alert("Contract salvat local și în Firestore.");
+    } else if (localOk) {
+      alert("Salvat local, dar a eșuat în cloud.\n" + errs.join("\n"));
+    } else if (cloudOk) {
+      alert("Salvat în cloud, dar a eșuat local.\n" + errs.join("\n"));
+    } else {
+      alert("Eroare la salvare:\n" + errs.join("\n"));
+    }
+
+    if (localOk || cloudOk) {
+      const n = getNextContractNumber();
+      setClientData({ ...emptyClient(), numarContract: n });
+      setAnexe([emptyAnexa()]);
+      setCurrentContractId(null);
+      setStep("hub-flux");
     }
   };
-  const handleLoadContract = async (id) => {
-    const c = await getContract(id);
-    if (!c) return;
-    setClientData({ ...emptyClient(), ...c.clientData });
-    setAnexe(c.anexe?.length ? c.anexe : [emptyAnexa()]);
-    setCurrentContractId(id);
-    setStep("client");
-  };
-  const handleDuplicateContract = async (id) => {
-    const c = await getContract(id);
-    if (!c) return;
-    setClientData({ ...emptyClient(), ...c.clientData, numarContract: "" });
-    setAnexe(c.anexe?.length ? c.anexe : [emptyAnexa()]);
-    setCurrentContractId(null);
-    setStep("client");
-  };
-  const handleDeleteContract = async (id) => {
-    if (!confirm("Ștergi acest contract?")) return;
-    await deleteContract(id);
-    if (currentContractId === id) setCurrentContractId(null);
-    refreshSavedContracts();
+  const handleOpenFromFirestore = async (nr) => {
+    try {
+      const snap = await getDoc(doc(db, "users", nr));
+      if (!snap.exists()) {
+        alert("Contractul nu a fost găsit în Firestore.");
+        return;
+      }
+      const cd = snap.data();
+      const [evSnap, incSnap] = await Promise.all([
+        getDocs(query(collection(db, "evenimente"), where("numarContract", "==", nr))),
+        getDocs(query(collection(db, "incasari"), where("numarContract", "==", nr))),
+      ]);
+      const ev = evSnap.docs.map((d) => d.data()).sort((a, b) => (a.anexaIndex || 0) - (b.anexaIndex || 0));
+      const inc = incSnap.docs.map((d) => d.data());
+      const strip = (obj, keys) => {
+        const out = { ...obj };
+        keys.forEach((k) => delete out[k]);
+        return out;
+      };
+      const META = ["anexaIndex", "numarContract", "cuiBeneficiar", "updatedAt", "createdAt", "total"];
+      const loadedAnexe = ev.length
+        ? ev.map((e) => {
+            const i = inc.find((x) => x.anexaIndex === e.anexaIndex) || {};
+            return {
+              eventData: { ...emptyEvent(), ...strip(e, META) },
+              budgetData: { ...emptyBudget(), ...strip(i, META) },
+            };
+          })
+        : [emptyAnexa()];
+      setClientData({ ...emptyClient(), ...strip(cd, ["updatedAt", "createdAt"]) });
+      setAnexe(loadedAnexe);
+      const localRec = await getContractByNumar(nr);
+      setCurrentContractId(localRec?.id ?? null);
+      setStep("client");
+    } catch (e) {
+      console.error(e);
+      alert("Eroare la deschidere: " + e.message);
+    }
   };
 
   const onExport = () => exportJSON({ clientData, anexe });
@@ -209,6 +269,30 @@ function App() {
     setCurrentContractId(null);
     setStep("client");
   };
+  const handleImportDocx = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const { parsed, missing } = await extractFromDocx(file);
+      setClientData((prev) => ({ ...emptyClient(), ...prev, ...parsed }));
+      setAnexe([emptyAnexa()]);
+      setCurrentContractId(null);
+      setStep("client");
+      if (missing.length) {
+        alert(
+          "Import .docx OK. Câmpuri NEdetectate (completează manual): " +
+            missing.join(", ")
+        );
+      } else {
+        alert("Import .docx OK. Verifică datele în formular înainte de salvare.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Eroare la citirea .docx: " + err.message);
+    }
+    e.target.value = "";
+  };
+
   const handleExportBackup = async () => {
     const data = await exportAll();
     exportJSON(data, `backup-contracte-${todayDmy()}.json`);
@@ -220,7 +304,6 @@ function App() {
       const data = await importJSON(file);
       const n = await importAll(data);
       alert(`${n} contracte importate.`);
-      refreshSavedContracts();
     } catch {
       alert("Backup invalid.");
     }
@@ -273,32 +356,168 @@ function App() {
   };
 
   const sendEmail = () => {
-    if (!clientData.email) {
-      alert("Adaugă email-ul beneficiarului.");
-      return;
-    }
     const subject = `Contract nr. ${clientData.numarContract || ""} - ALUMA S.R.L.`;
-    const body = `Bună ziua,\n\nVă transmitem contractul nr. ${clientData.numarContract || ""} din ${clientData.dataContract} împreună cu anexele aferente.\n\nVă mulțumim.\n\nCu stimă,\nALUMA S.R.L.`;
-    window.location.href = `mailto:${clientData.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const body = `Bună ziua,\n\nVă transmitem contractul nr. ${clientData.numarContract || ""}${clientData.dataContract ? ` din ${clientData.dataContract}` : ""} împreună cu anexele aferente.\n\nVă mulțumim.\n\nCu stimă,\nALUMA S.R.L.`;
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    setTimeout(() => {
+      alert("Gmail s-a deschis într-un tab nou. Salvează PDF-ul din butonul Printează / PDF și atașează-l manual.");
+    }, 300);
   };
 
   const exportDocx = async () => {
     try {
-      const mod = await import("docx");
-      const { Document, Packer, Paragraph, TextRun } = mod;
-      const html = document.querySelector(".preview-container")?.innerText || "";
-      const doc = new Document({
-        sections: [{ children: html.split("\n").map((line) => new Paragraph({ children: [new TextRun(line)] })) }],
-      });
-      const blob = await Packer.toBlob(doc);
-      const url = URL.createObjectURL(blob);
+      const source = document.querySelector(".preview-container");
+      if (!source) return;
+
+      const absolutize = (root) => {
+        root.querySelectorAll("img").forEach((img) => {
+          try {
+            const abs = new URL(img.getAttribute("src"), window.location.href).href;
+            img.setAttribute("src", abs);
+          } catch { /* keep */ }
+        });
+      };
+
+      // Imagini -> dataURL (html-to-docx nu poate fetch-ui async)
+      const toDataUrl = async (url) => {
+        const r = await fetch(url);
+        const b = await r.blob();
+        return await new Promise((res, rej) => {
+          const fr = new FileReader();
+          fr.onload = () => res(fr.result);
+          fr.onerror = rej;
+          fr.readAsDataURL(b);
+        });
+      };
+
+      const pages = Array.from(source.querySelectorAll(".document-page"));
+      if (pages.length === 0) return;
+
+      // Header / Footer din prima pagină (logo + subsol)
+      const firstTable = pages[0].querySelector("table.print-table");
+      const headerImg = firstTable?.querySelector("thead img");
+      const footerImg = firstTable?.querySelector("tfoot img");
+      let headerHTML = "";
+      let footerHTML = "";
+      // mm -> px @ 96 DPI (html-to-docx folosește atribute width/height în px)
+      const mmToPx = (mm) => Math.round(mm * 3.7795);
+      if (headerImg) {
+        const abs = new URL(headerImg.getAttribute("src"), window.location.href).href;
+        const data = await toDataUrl(abs);
+        headerHTML = `<p style="margin:0"><img src="${data}" width="${mmToPx(60)}" height="${mmToPx(30)}" /></p>`;
+      }
+      if (footerImg) {
+        const abs = new URL(footerImg.getAttribute("src"), window.location.href).href;
+        const data = await toDataUrl(abs);
+        footerHTML = `<p style="margin:0;text-align:center"><img src="${data}" width="${mmToPx(180)}" height="${mmToPx(18)}" /></p>`;
+      }
+
+      // Conținut: doar tbody-ul fiecărei pagini, cu page-break între
+      const bodyParts = [];
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i].cloneNode(true);
+        page.querySelectorAll(".no-print, .page-marks").forEach((n) => n.remove());
+        absolutize(page);
+
+        // Semnătura imagine: dataURL + dimensiuni atribute HTML
+        for (const sign of page.querySelectorAll("img.sign-img")) {
+          try {
+            const data = await toDataUrl(sign.src);
+            sign.setAttribute("src", data);
+            sign.setAttribute("width", String(mmToPx(50)));
+            sign.setAttribute("height", String(mmToPx(20)));
+          } catch { /* ignore */ }
+        }
+
+        // Flex -> table pentru .doc-signatures (Word nu înțelege flex)
+        for (const sig of page.querySelectorAll(".doc-signatures")) {
+          const boxes = Array.from(sig.querySelectorAll(".signature-box"));
+          if (boxes.length === 2) {
+            const tbl = document.createElement("table");
+            tbl.setAttribute("style", "width:100%;margin-top:30pt;border:none");
+            const tr = document.createElement("tr");
+            boxes.forEach((b) => {
+              const td = document.createElement("td");
+              td.setAttribute("style", "width:50%;vertical-align:top;border:none;padding:0 6pt");
+              td.innerHTML = b.innerHTML;
+              tr.appendChild(td);
+            });
+            tbl.appendChild(tr);
+            sig.replaceWith(tbl);
+          }
+        }
+
+        const tbody = page.querySelector("table.print-table tbody");
+        const inner = tbody ? tbody.innerHTML : page.innerHTML;
+        const brk = i > 0 ? `<div style="page-break-before:always"></div>` : "";
+        bodyParts.push(brk + inner);
+      }
+
+      const css = `
+        body { font-family: "Times New Roman", Times, serif; font-size: 12pt; line-height: 1.15; }
+        p { margin: 6pt 0 0 0; text-align: justify; }
+        strong, b { font-weight: bold; }
+        .doc-title { text-align: center; font-size: 14pt; font-weight: bold; margin: 0 0 5pt 0; text-transform: uppercase; }
+        .doc-subtitle { text-align: center; font-weight: bold; margin: 0 0 20pt 0; font-size: 12pt; }
+        .text-center { text-align: center; }
+        .doc-section { margin: 0 0 15pt 0; }
+        .doc-section p { text-indent: 36pt; margin: 6pt 0 0 0; text-align: justify; }
+        .doc-section h3 { font-size: 12pt; font-weight: bold; margin: 12pt 0 6pt 0; text-align: center; text-indent: 0; }
+        .doc-section ul { margin: 6pt 0 0 0; padding-left: 72pt; }
+        .doc-section li { margin: 6pt 0 0 0; text-align: justify; }
+        .total-highlight { margin-top: 15pt; text-align: right; font-weight: bold; font-size: 12pt; }
+        table { border-collapse: collapse; }
+        table.budget-table { width: 100%; }
+        table.budget-table td, table.budget-table th { border: 1px solid #000; padding: 4pt; }
+      `;
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${bodyParts.join("")}</body></html>`;
+
+      if (!window.HTMLToDOCX) {
+        if (typeof window.global === "undefined") window.global = window;
+        if (typeof window.Buffer === "undefined") {
+          const { Buffer } = await import("buffer");
+          window.Buffer = Buffer;
+        }
+        const scriptUrl = (await import("@turbodocx/html-to-docx/dist/html-to-docx.browser.js?url")).default;
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = scriptUrl;
+          s.onload = resolve;
+          s.onerror = () => reject(new Error("Nu s-a putut încărca html-to-docx browser bundle"));
+          document.head.appendChild(s);
+        });
+      }
+      const htmlToDocx = window.HTMLToDOCX;
+      if (typeof htmlToDocx !== "function") throw new Error("HTMLToDOCX indisponibil");
+
+      const blob = await htmlToDocx(html, headerHTML || null, {
+        orientation: "portrait",
+        pageSize: { width: 11906, height: 16838 }, // A4 in twips
+        margins: { top: 850, right: 567, bottom: 1020, left: 1134 }, // 15/10/18/20 mm
+        font: "Times New Roman",
+        fontSize: 24, // 12pt
+        table: { row: { cantSplit: true } },
+        header: !!headerHTML,
+        footer: !!footerHTML,
+        pageNumber: true,
+      }, footerHTML || null);
+
+      const finalBlob = blob instanceof Blob
+        ? blob
+        : new Blob([blob.buffer ? blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength) : blob], {
+            type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          });
+      const url = URL.createObjectURL(finalBlob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `contract-${clientData.numarContract || "draft"}.docx`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
-      alert("Pentru export Word: `npm install docx` și reîncearcă.");
+    } catch (e) {
+      console.error("Export Word:", e);
+      alert("Eroare la exportul Word: " + (e?.message || e));
     }
   };
 
@@ -348,6 +567,61 @@ function App() {
       if (!a.budgetData.valoareServicii) errs.push(`Anexa ${n}: valoare servicii lipsă.`);
     });
     return errs;
+  };
+
+  const salveazaContract = async ({ silent = false } = {}) => {
+    const nr = (clientData.numarContract || "").trim();
+    if (!nr) {
+      const msg = "Contractul nu are număr. Generează un număr înainte de salvare.";
+      if (silent) throw new Error(msg);
+      alert(msg);
+      return;
+    }
+    try {
+      await setDoc(doc(db, "users", nr), {
+        ...clientData,
+        updatedAt: serverTimestamp(),
+      });
+
+      const keepIds = new Set(anexe.map((_, i) => `${nr}_A${i + 1}`));
+      for (const col of ["evenimente", "incasari"]) {
+        const snap = await getDocs(query(collection(db, col), where("numarContract", "==", nr)));
+        await Promise.all(
+          snap.docs
+            .filter((d) => !keepIds.has(d.id))
+            .map((d) => deleteDoc(doc(db, col, d.id)))
+        );
+      }
+
+      for (let i = 0; i < anexe.length; i++) {
+        const a = anexe[i];
+        const total = sumBudget(a.budgetData);
+        const anexaId = `${nr}_A${i + 1}`;
+
+        await setDoc(doc(db, "evenimente", anexaId), {
+          ...a.eventData,
+          numarContract: nr,
+          cuiBeneficiar: clientData.cui,
+          anexaIndex: i + 1,
+          updatedAt: serverTimestamp(),
+        });
+
+        await setDoc(doc(db, "incasari", anexaId), {
+          ...a.budgetData,
+          total,
+          numarContract: nr,
+          cuiBeneficiar: clientData.cui,
+          anexaIndex: i + 1,
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      }
+
+      if (!silent) alert("Datele au fost salvate cu succes în Firestore.");
+    } catch (e) {
+      console.error("Firestore:", e);
+      if (silent) throw e;
+      alert("Eroare la salvarea în Firestore: " + e.message);
+    }
   };
 
   const handleGenerate = (selection = "all") => {
@@ -445,7 +719,13 @@ function App() {
           <em> Save as PDF</em>.
         </div>
 
-        {showContract && <Contract clientData={clientData} editMode={editMode} />}
+        {showContract && (
+          <Contract
+            clientData={clientData}
+            editMode={editMode}
+            onClauzeChange={(cc) => setClientData((p) => ({ ...p, clauzeCustom: cc }))}
+          />
+        )}
         {visibleAnexe.map((a) => (
           <Anexa
             key={a.idx}
@@ -454,10 +734,12 @@ function App() {
             eventData={{
               ...a.eventData,
               dataPredare: calcDataPredare(a.eventData.dataEveniment, a.eventData.zilePredare),
+              termenIncasare: calcTermenIncasare(a.eventData.dataEveniment, a.eventData.zilePredare, a.eventData.zileIncasare),
             }}
             budgetData={a.budgetData}
             calculeazaTotal={() => sumBudget(a.budgetData)}
             editMode={editMode}
+            onClauzeChange={(cc) => setClientData((p) => ({ ...p, clauzeCustom: cc }))}
           />
         ))}
       </div>
@@ -518,19 +800,90 @@ function App() {
 
   const isAnnex = currentAnexa !== null;
   const isClient = step === "client";
-  const isSaved = step === "salvate";
+  const isDashboard = step === "dashboard";
+  const isRapoarte = step === "rapoarte";
+  const isSaved = step === "salvate" || step === "biblioteca-contracte" || step === "biblioteca-clienti";
+  const isHubFlux = step === "hub-flux";
+  const isHubBiblioteca = step === "hub-biblioteca";
+  const isHubSistem = step === "hub-sistem";
+  const isHub = isHubFlux || isHubBiblioteca || isHubSistem;
+  const bibliotecaTab = step === "biblioteca-clienti" ? "clienti" : "contracte";
+
+  const refreshDrafturi = async () => {
+    try { setDrafturi(await listDrafturi()); } catch { setDrafturi([]); }
+  };
+
+  const handleOpenDraft = async (id) => {
+    try {
+      const rec = await getContract(id);
+      if (!rec) { alert("Draft inexistent."); return; }
+      setClientData({ ...emptyClient(), ...(rec.clientData || {}) });
+      setAnexe(Array.isArray(rec.anexe) && rec.anexe.length ? rec.anexe : [emptyAnexa()]);
+      setCurrentContractId(rec.id);
+      setStep("client");
+    } catch (e) {
+      alert("Eroare la deschidere draft: " + e.message);
+    }
+  };
+  const handleDeleteDraft = async (id) => {
+    if (!confirm("Ștergi acest draft definitiv?")) return;
+    try {
+      await deleteContract(id);
+      if (currentContractId === id) setCurrentContractId(null);
+      await refreshDrafturi();
+    } catch (e) {
+      alert("Eroare la ștergere: " + e.message);
+    }
+  };
+  const handleMarkTrimis = async () => {
+    if (!currentContractId) { alert("Salvează contractul mai întâi."); return; }
+    if (!confirm("Marchezi contractul ca trimis? Va dispărea din lista de drafturi.")) return;
+    try {
+      await markContractTrimis(currentContractId);
+      await refreshDrafturi();
+      alert("Contract marcat ca trimis.");
+    } catch (e) {
+      alert("Eroare: " + e.message);
+    }
+  };
 
   return (
     <div className="app-container no-print">
       {/* ============ SIDEBAR ============ */}
       <aside className="app-sidebar">
-        <div className="brand">
-          <div className="brand-mark">A</div>
+        <div
+          className="brand"
+          onClick={() => setStep("dashboard")}
+          role="button"
+          tabIndex={0}
+          title="Mergi la Dashboard"
+          style={{ cursor: "pointer" }}
+        >
+          <img src="/LOGO1.png" alt="Ioana Apostol" className="brand-logo" draggable="false" />
           <div className="brand-name">Aluma</div>
           <div className="brand-sub">v2.6</div>
         </div>
 
-        <div className="nav-section-label">Flux contract</div>
+        <div className="nav-section-label">Panou</div>
+        <button
+          className={`nav-item ${isDashboard ? "active" : ""}`}
+          onClick={() => setStep("dashboard")}
+        >
+          <span>⌂ Dashboard</span>
+        </button>
+        <button
+          className={`nav-item ${isRapoarte ? "active" : ""}`}
+          onClick={() => setStep("rapoarte")}
+        >
+          <span>📊 Rapoarte</span>
+        </button>
+
+        <div
+          className={`nav-section-label clickable ${isHubFlux ? "active" : ""}`}
+          onClick={() => setStep("hub-flux")}
+          role="button"
+          tabIndex={0}
+        >Flux contract</div>
 
         <button
           className={`nav-item ${isClient ? "active" : ""}`}
@@ -566,23 +919,36 @@ function App() {
           </div>
         ))}
 
-        {!(clientData.tipContract === "unic" && anexe.length >= 1) && (
-          <button className="nav-item" onClick={addAnexa}>
-            <span className="nav-num">+</span>
-            <span style={{ color: "#8b8478" }}>Adaugă anexă</span>
-          </button>
-        )}
-
-        <div className="nav-section-label">Bibliotecă</div>
-        <button
-          className={`nav-item ${isSaved ? "active" : ""}`}
-          onClick={() => setStep("salvate")}
-        >
-          <span>📁 Contracte salvate</span>
-          {savedContracts.length > 0 && <span className="nav-meta">{savedContracts.length}</span>}
+        <button className="nav-item" onClick={addAnexa}>
+          <span className="nav-num">+</span>
+          <span style={{ color: "#8b8478" }}>Adaugă anexă</span>
         </button>
 
-        <div className="nav-section-label">Sistem</div>
+        <div
+          className={`nav-section-label clickable ${isHubBiblioteca ? "active" : ""}`}
+          onClick={() => setStep("hub-biblioteca")}
+          role="button"
+          tabIndex={0}
+        >Bibliotecă</div>
+        <button
+          className={`nav-item ${step === "biblioteca-contracte" || step === "salvate" ? "active" : ""}`}
+          onClick={() => setStep("biblioteca-contracte")}
+        >
+          <span>📁 Contracte</span>
+        </button>
+        <button
+          className={`nav-item ${step === "biblioteca-clienti" ? "active" : ""}`}
+          onClick={() => setStep("biblioteca-clienti")}
+        >
+          <span>👥 Clienți</span>
+        </button>
+
+        <div
+          className={`nav-section-label clickable ${isHubSistem ? "active" : ""}`}
+          onClick={() => setStep("hub-sistem")}
+          role="button"
+          tabIndex={0}
+        >Sistem</div>
         <button className="nav-item" onClick={handleNewContract}>
           <span>＋ Contract nou</span>
         </button>
@@ -600,6 +966,10 @@ function App() {
           <span>↑ Restaurează backup</span>
         </button>
         <input ref={backupFileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={handleImportBackup} />
+        <button className="nav-item" onClick={() => docFileRef.current?.click()}>
+          <span>↑ Import .docx / PDF</span>
+        </button>
+        <input ref={docFileRef} type="file" accept=".docx,.pdf" style={{ display: "none" }} onChange={handleImportDocx} />
 
         <div className="sidebar-bottom">
           <div className="user-chip">
@@ -633,13 +1003,160 @@ function App() {
             />
             <span className="kbd-hint">⌘K</span>
           </div>
-          <div className="top-actions">
-            <span className="pill live">Auto-save</span>
-            <span className="pill warn">{currentContractId ? `V${currentContractId} · DRAFT` : "DRAFT"}</span>
-          </div>
+          <div className="top-actions"></div>
         </div>
 
+        {/* Dashboard */}
+        {isDashboard && (
+          <Dashboard
+            onNewContract={handleNewContract}
+            onOpenContract={handleOpenFromFirestore}
+            onGoLibrary={(t) => setStep(t === "clienti" ? "biblioteca-clienti" : "biblioteca-contracte")}
+            onGoReports={() => setStep("rapoarte")}
+          />
+        )}
+
+        {/* Rapoarte */}
+        {isRapoarte && (
+          <Rapoarte
+            onOpenContract={handleOpenFromFirestore}
+            onNewContract={handleNewContract}
+          />
+        )}
+
+        {/* Hub: Flux contract */}
+        {isHubFlux && (
+          <>
+            <HubPage
+              eyebrow="Aluma · Flux contract"
+              title="Flux contract"
+              subtitle="Pași pentru contractul curent — beneficiar, anexe și adăugare anexă nouă."
+              cards={[
+                {
+                  color: "#EF4444",
+                  icon: "＋",
+                  label: "Contract nou",
+                  desc: "Pornește un contract gol",
+                  onClick: handleNewContract,
+                },
+                {
+                  color: "#6366F1",
+                  icon: "1",
+                  label: "Beneficiar",
+                  desc: clientData.numeBeneficiar || "Date client",
+                  onClick: () => setStep("client"),
+                },
+                ...anexe.map((a, i) => ({
+                  color: "#34CAE8",
+                  icon: String(i + 2),
+                  label: `Anexa ${i + 1}${a.eventData.scop ? ` · ${a.eventData.scop.slice(0, 20)}` : ""}`,
+                  desc: `${fmt(sumBudget(a.budgetData))} LEI`,
+                  onClick: () => setStep(`anexa-${i}`),
+                })),
+                {
+                  color: "#10B981",
+                  icon: "＋",
+                  label: "Adaugă anexă",
+                  desc: "Anexă nouă la contract",
+                  onClick: () => { addAnexa(); },
+                },
+                {
+                  color: "#A3A3A3",
+                  icon: "✓",
+                  label: "Marchează trimis",
+                  desc: currentContractId ? "Scoate contractul din drafturi" : "Salvează contractul mai întâi",
+                  onClick: handleMarkTrimis,
+                  disabled: !currentContractId,
+                },
+              ]}
+            />
+            <div className="dash" style={{ paddingTop: 0 }}>
+              <div className="section-cap">Drafturi ({drafturi.length})</div>
+              {drafturi.length === 0 ? (
+                <div style={{ padding: "16px 0", color: "#737373", fontSize: 13 }}>
+                  Niciun draft. Contractele salvate apar aici până le marchezi ca trimise.
+                </div>
+              ) : (
+                <div className="qa-grid">
+                  {drafturi.map((d) => (
+                    <div
+                      key={d.id}
+                      className="qa"
+                      style={{ "--qa-color": "#F59E0B", cursor: "default" }}
+                    >
+                      <div className="qa-icon">📝</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="qa-label">
+                          {d.numeBeneficiar || "(fără beneficiar)"} · #{d.numarContract || "—"}
+                        </div>
+                        <div className="qa-desc">
+                          {fmt(d.total || 0)} LEI · {(d.updatedAt || "").slice(0, 10)}
+                        </div>
+                        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                          <button
+                            type="button"
+                            className="pill"
+                            onClick={(e) => { e.stopPropagation(); handleOpenDraft(d.id); }}
+                          >Deschide</button>
+                          <button
+                            type="button"
+                            className="pill warn"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteDraft(d.id); }}
+                          >Șterge</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Hub: Bibliotecă */}
+        {isHubBiblioteca && (
+          <HubPage
+            eyebrow="Aluma · Bibliotecă"
+            title="Bibliotecă"
+            subtitle="Răsfoiește contractele salvate și istoricul beneficiarilor."
+            cards={[
+              {
+                color: "#F59E0B",
+                icon: "📁",
+                label: "Contracte",
+                desc: "Contractele salvate",
+                onClick: () => setStep("biblioteca-contracte"),
+              },
+              {
+                color: "#8B5CF6",
+                icon: "👥",
+                label: "Clienți",
+                desc: "Istoricul beneficiarilor",
+                onClick: () => setStep("biblioteca-clienti"),
+              },
+            ]}
+          />
+        )}
+
+        {/* Hub: Sistem */}
+        {isHubSistem && (
+          <HubPage
+            eyebrow="Aluma · Sistem"
+            title="Sistem"
+            subtitle="Operațiuni asupra datelor — backup, import, export."
+            cards={[
+              { color: "#6366F1", icon: "＋", label: "Contract nou", desc: "Pornește un contract gol", onClick: handleNewContract },
+              { color: "#10B981", icon: "↓", label: "Export JSON", desc: "Exportă contractul curent", onClick: onExport },
+              { color: "#34CAE8", icon: "↑", label: "Import JSON", desc: "Încarcă contract din JSON", onClick: () => fileRef.current?.click() },
+              { color: "#F59E0B", icon: "↓", label: "Backup DB", desc: "Backup integral baza locală", onClick: handleExportBackup },
+              { color: "#EF4444", icon: "↑", label: "Restaurează backup", desc: "Restaurează din backup", onClick: () => backupFileRef.current?.click() },
+              { color: "#8B5CF6", icon: "📥", label: "Import .docx / PDF", desc: "Pre-populează din Word/PDF", onClick: () => docFileRef.current?.click() },
+            ]}
+          />
+        )}
+
         {/* Content */}
+        {!isDashboard && !isRapoarte && !isHub && (
         <div className={`content ${isSaved ? "single" : ""}`}>
 
           {/* Page head */}
@@ -651,7 +1168,7 @@ function App() {
                 </div>
                 <h1>
                   {clientData.numeBeneficiar
-                    ? <>Contract pentru<br /><em>{clientData.numeBeneficiar}</em></>
+                    ? <>Contract pentru <em>{clientData.numeBeneficiar}</em></>
                     : <em>Contract nou</em>}
                 </h1>
                 {clientData.numeBeneficiar && (
@@ -971,6 +1488,15 @@ function App() {
                       />
                     </div>
 
+                    <div className="field">
+                      <label>Zile lucrătoare încasare</label>
+                      <input
+                        type="number"
+                        value={currentAnexa.eventData.zileIncasare ?? "10"}
+                        onChange={(e) => updateAnexa(anexaIdx, "eventData", "zileIncasare", e.target.value)}
+                      />
+                    </div>
+
                     <div className="field col-span-3">
                       <label>Observații / clauze particulare</label>
                       <textarea
@@ -1035,7 +1561,7 @@ function App() {
                               const nb = { ...a.budgetData };
                               fields.forEach((f) => {
                                 const v = Number(nb[f]);
-                                if (v) nb[f] = String(Math.round(v * bnrConv.rate * 100) / 100);
+                                if (v) nb[f] = String(Math.round(v * bnrConv.rate));
                               });
                               return { ...a, budgetData: nb };
                             }));
@@ -1076,62 +1602,8 @@ function App() {
               </section>
             )}
 
-            {/* SALVATE STEP */}
-            {isSaved && (
-              <section className="card">
-                <div className="section">
-                  <div className="section-head">
-                    <span className="idx">⌗</span>
-                    <h2>Contracte salvate</h2>
-                    <span className="helper">{savedContracts.length} înregistrări locale</span>
-                  </div>
-                  <div className="field" style={{ marginBottom: 16, maxWidth: 420 }}>
-                    <label>Caută (nume, CUI, număr)</label>
-                    <input
-                      type="text"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="ex: SC Exemplu SRL"
-                    />
-                  </div>
-
-                  {savedContracts.length === 0 ? (
-                    <p style={{ color: "var(--muted)" }}>Niciun contract salvat. Completează formularul și apasă „Salvează în DB".</p>
-                  ) : (
-                    <table className="table-saved">
-                      <thead>
-                        <tr>
-                          <th>Nr.</th>
-                          <th>Data</th>
-                          <th>Beneficiar</th>
-                          <th>CUI</th>
-                          <th style={{ textAlign: "right" }}>Total</th>
-                          <th>Acțiuni</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {savedContracts.map((c) => (
-                          <tr key={c.id}>
-                            <td className="num">{c.numarContract || "—"}</td>
-                            <td className="num">{c.dataContract}</td>
-                            <td>{c.numeBeneficiar}</td>
-                            <td className="num">{c.cui}</td>
-                            <td className="num" style={{ textAlign: "right" }}>{fmt(c.total)} LEI</td>
-                            <td>
-                              <div className="actions-cell">
-                                <button className="btn" onClick={() => handleLoadContract(c.id)}>Deschide</button>
-                                <button className="btn" onClick={() => handleDuplicateContract(c.id)}>Duplică</button>
-                                <button className="btn danger" onClick={() => handleDeleteContract(c.id)}>Șterge</button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </section>
-            )}
+            {/* BIBLIOTECĂ (Firestore) */}
+            {isSaved && <Biblioteca onOpen={handleOpenFromFirestore} tab={bibliotecaTab} onTabChange={(t) => setStep(t === "clienti" ? "biblioteca-clienti" : "biblioteca-contracte")} />}
 
             {/* ERRORS */}
             {errors.length > 0 && (
@@ -1201,7 +1673,7 @@ function App() {
                         display: "grid", placeItems: "center",
                         fontSize: 10, flexShrink: 0, marginTop: 2,
                       }}>{c.ok ? "✓" : ""}</span>
-                      <span style={{ textDecoration: c.ok ? "line-through" : "none", textDecorationColor: "var(--line-2)" }}>
+                      <span style={{ textDecorationLine: c.ok ? "line-through" : "none", textDecorationColor: "var(--line-2)" }}>
                         {c.text}
                       </span>
                     </li>
@@ -1229,6 +1701,7 @@ function App() {
             </aside>
           )}
         </div>
+        )}
       </main>
     </div>
   );

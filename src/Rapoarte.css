@@ -1,0 +1,300 @@
+/* Rapoarte — adăugiri peste Dashboard.css */
+
+.rap { padding-bottom: 60px; }
+
+/* ---------- Filter bar ---------- */
+.rap-filters {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  background: var(--d-surface);
+  border: 1px solid var(--d-border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: var(--d-shadow-sm);
+  margin-bottom: 16px;
+}
+.rap-filter { display: flex; flex-direction: column; gap: 4px; }
+.rap-filter label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--d-sub);
+  font-weight: 600;
+}
+.rap-filter input {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--d-border);
+  border-radius: 10px;
+  background: var(--d-panel);
+  color: var(--d-text);
+}
+.rap-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.rap-presets button {
+  font: inherit; font-size: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--d-border);
+  border-radius: 999px;
+  background: var(--d-panel);
+  color: var(--d-text-2);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.rap-presets button:hover {
+  border-color: var(--d-brand);
+  color: var(--d-brand);
+  background: var(--d-highlight);
+}
+.rap-print {
+  margin-left: auto;
+  font: inherit; font-size: 13px; font-weight: 600;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366F1, #34CAE8);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--d-shadow-brand);
+}
+
+/* ---------- Tabs ---------- */
+.rap-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  background: var(--d-surface);
+  border: 1px solid var(--d-border);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: var(--d-shadow-sm);
+  overflow-x: auto;
+}
+.rap-tab {
+  font: inherit; font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--d-text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s ease;
+}
+.rap-tab:hover { color: var(--d-text); background: var(--d-panel); }
+.rap-tab.on {
+  background: linear-gradient(135deg, #6366F1, #34CAE8);
+  color: #fff;
+  box-shadow: var(--d-shadow-brand);
+}
+
+/* ---------- CSV mini-btn ---------- */
+.rap-csv {
+  font: inherit; font-size: 11px; font-weight: 600;
+  padding: 6px 10px;
+  border: 1px solid var(--d-border);
+  border-radius: 8px;
+  background: var(--d-panel);
+  color: var(--d-text-2);
+  cursor: pointer;
+}
+.rap-csv:hover { color: var(--d-brand); border-color: var(--d-brand); }
+
+/* ---------- Horizontal bar rows (top-clienți, locații, scop) ---------- */
+.rap-bar-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 110px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--d-separator);
+}
+.rap-bar-row:last-child { border-bottom: none; }
+.rap-bar-rank {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: var(--d-highlight);
+  color: var(--d-brand);
+  display: grid; place-items: center;
+  font-size: 11px; font-weight: 700;
+}
+.rap-bar-main { min-width: 0; }
+.rap-bar-title {
+  font-size: 13px; font-weight: 600;
+  color: var(--d-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-bottom: 4px;
+}
+.rap-bar-track {
+  height: 6px;
+  background: var(--d-panel);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.rap-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366F1, #34CAE8);
+  border-radius: 999px;
+  transition: width .3s ease;
+}
+.rap-bar-val {
+  text-align: right;
+  font-size: 13px; font-weight: 700;
+  color: var(--d-text);
+  font-family: "Geist Mono", ui-monospace, monospace;
+}
+.rap-bar-val span { font-size: 10px; color: var(--d-sub); font-weight: 500; }
+.rap-bar-sub {
+  font-size: 10px;
+  color: var(--d-sub);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* ---------- YoY chart ---------- */
+.rap-yoy {
+  display: flex;
+  gap: 6px;
+  height: 200px;
+  padding: 12px 4px 4px;
+  align-items: flex-end;
+}
+.rap-yoy-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.rap-yoy-bars {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  justify-content: center;
+}
+.rap-yoy-bar {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+  transition: height .3s ease;
+}
+.rap-yoy-bar.prev { background: #C7D2FE; }
+.rap-yoy-bar.cur { background: linear-gradient(180deg, #6366F1, #34CAE8); }
+.rap-yoy-label {
+  font-size: 10px;
+  color: var(--d-sub);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ---------- Tables ---------- */
+.rap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.rap-table th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--d-sub);
+  font-weight: 700;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--d-border);
+}
+.rap-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--d-separator);
+  color: var(--d-text);
+}
+.rap-table tbody tr:hover { background: var(--d-highlight); }
+.rap-table .mono { font-family: "Geist Mono", ui-monospace, monospace; font-size: 12px; }
+
+/* ---------- Pills ---------- */
+.rap-pill {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.rap-pill.warn { background: #FEF3C7; color: #92400E; }
+.rap-pill.danger { background: #FEE2E2; color: #991B1B; }
+.rap-pill.success { background: #D1FAE5; color: #065F46; }
+
+/* ---------- Mini action button (mark paid) ---------- */
+.rap-mini-btn {
+  font: inherit;
+  font-size: 11px; font-weight: 600;
+  padding: 6px 10px;
+  border: 1px solid var(--d-border);
+  border-radius: 8px;
+  background: var(--d-panel);
+  color: var(--d-success);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rap-mini-btn:hover {
+  background: var(--d-success);
+  color: #fff;
+  border-color: var(--d-success);
+}
+
+/* ---------- Funnel ---------- */
+.rap-funnel { display: flex; flex-direction: column; gap: 12px; padding: 8px 0; }
+.rap-funnel-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 140px;
+  align-items: center;
+  gap: 16px;
+}
+.rap-funnel-label {
+  font-size: 13px; font-weight: 600;
+  color: var(--d-text-2);
+}
+.rap-funnel-track {
+  height: 28px;
+  background: var(--d-panel);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.rap-funnel-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366F1, #34CAE8);
+  border-radius: 8px;
+  transition: width .4s ease;
+}
+.rap-funnel-val {
+  font-size: 14px; font-weight: 700;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  color: var(--d-text);
+  text-align: right;
+}
+.rap-funnel-pct {
+  font-size: 11px;
+  color: var(--d-sub);
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+/* ---------- Print ---------- */
+@media print {
+  .rap-filters, .rap-tabs, .rap-csv, .rap-mini-btn, .rap-print, .dash-hero-cta {
+    display: none !important;
+  }
+  .rap { padding: 0; background: #fff; }
+  .panel { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .rap-funnel-row { grid-template-columns: 1fr; gap: 6px; }
+  .rap-funnel-val { text-align: left; }
+  .dash-grid { grid-template-columns: 1fr !important; }
+}

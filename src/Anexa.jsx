@@ -1,9 +1,39 @@
-const Anexa = ({ clientData, eventData, budgetData, calculeazaTotal, anexaNumber = 1, editMode = false }) => {
-  const dataCurenta = clientData.dataContract || (() => {
-    const d = new Date();
-    return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
-  })();
+import PageMarks from "./PageMarks";
+import { SECTIUNI_ANEXA } from "./contractTemplate";
+import { aplicaOverrides, renderText, reactToText, ClauzaControls, AdaugaLaFinal } from "./clauzeUtils";
+
+const Anexa = ({
+  clientData,
+  eventData,
+  budgetData,
+  calculeazaTotal,
+  anexaNumber = 1,
+  editMode = false,
+  onClauzeChange,
+}) => {
+  const dataCurenta =
+    clientData.dataContract ||
+    (() => {
+      const d = new Date();
+      return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+    })();
   const nrContract = clientData.numarContract || "......";
+
+  const custom = clientData.clauzeCustom?.anexa || {};
+  const { sectiuniFinale, idMap } = aplicaOverrides(SECTIUNI_ANEXA, custom);
+
+  const ctxData = {
+    ...clientData,
+    _idMap: idMap,
+    _dataCurenta: dataCurenta,
+    _event: eventData,
+    _budget: budgetData,
+  };
+
+  const setCustom = (next) => {
+    if (!onClauzeChange) return;
+    onClauzeChange({ ...(clientData.clauzeCustom || {}), anexa: next });
+  };
 
   return (
     <div
@@ -12,6 +42,7 @@ const Anexa = ({ clientData, eventData, budgetData, calculeazaTotal, anexaNumber
       suppressContentEditableWarning
       style={editMode ? { outline: "2px dashed #d4a72c" } : undefined}
     >
+      <PageMarks />
       <table className="print-table">
         <thead className="print-header">
           <tr>
@@ -26,7 +57,7 @@ const Anexa = ({ clientData, eventData, budgetData, calculeazaTotal, anexaNumber
           <tr>
             <td>
               <div className="doc-footer">
-                <img src="/subsol.png" alt="Linii subsol" />
+                <img src="/subsol3.jfif" alt="Linii subsol" />
                 <div className="page-number"></div>
               </div>
             </td>
@@ -41,138 +72,80 @@ const Anexa = ({ clientData, eventData, budgetData, calculeazaTotal, anexaNumber
               </h2>
               <h3 className="text-center doc-subtitle">Comandă fermă client</h3>
 
-              <div className="doc-section">
-                <p>
-                  <strong>1.</strong> Obiectul prezentei anexe îl constituie
-                  prestarea de servicii fotografice și videografice
-                  profesionale de către Furnizor, contra cost, în favoarea
-                  Beneficiarului, la data de <strong>{dataCurenta}</strong>.
-                </p>
-                <p>
-                  <strong>2.</strong> Serviciile vor fi prestate în cadrul
-                  evenimentului{" "}
-                  <strong>
-                    {eventData.scop || ".............................."}
-                  </strong>{" "}
-                  ce se desfășoară la data de{" "}
-                  <strong>
-                    {eventData.dataEveniment ||
-                      ".............................."}
-                  </strong>
-                  , în{" "}
-                  <strong>
-                    {eventData.locatie || ".............................."}
-                  </strong>
-                  .
-                </p>
-                <p>
-                  <strong>3.</strong> Furnizorul se obligă să predea
-                  Beneficiarului imaginile în forma finală pe suport digital la
-                  rezoluție mare, până la data de{" "}
-                  <strong>
-                    {eventData.dataPredare || ".............................."}
-                  </strong>
-                  .
-                </p>
-                <p>
-                  <strong>4.</strong> Furnizorul are obligația de a păstra
-                  imaginile în forma finală pe suport digital la rezoluție
-                  mare, timp de 90 zile de la data predării către Beneficiar.
-                </p>
-              </div>
+              {sectiuniFinale.map((sec) => {
+                let clauzaNum = 0;
+                return (
+                  <div className="doc-section" key={sec.id}>
+                    {!sec.fara_titlu && <h3>{sec.titlu}</h3>}
+                    {sec.clauzeFinale.map((cl) => {
+                      const isNumbered = !cl.noNum;
+                      if (isNumbered) clauzaNum++;
+                      const numarStr = isNumbered ? String(clauzaNum) : "";
 
-              <div className="doc-section">
-                <p>
-                  <strong>5.</strong> Valoarea totală a serviciilor este de{" "}
-                  <strong>{budgetData.valoareServicii || "......"} LEI</strong>,
-                  ce presupune valoarea serviciilor profesionale prestate în
-                  locație, prelucrarea digitală de baza a imaginilor și
-                  costurile privind echipamentele.
-                </p>
+                      let inner;
+                      if (cl.render) {
+                        inner = cl.render({ numar: numarStr, data: ctxData });
+                        if (inner == null) {
+                          if (isNumbered) clauzaNum--; // nu consuma un număr
+                          return null;
+                        }
+                      } else {
+                        inner = (
+                          <p>
+                            {isNumbered && (
+                              <>
+                                <strong>{numarStr}.</strong>{" "}
+                              </>
+                            )}
+                            {renderText(cl.text, idMap)}
+                          </p>
+                        );
+                      }
 
-                {(Number(budgetData.transport) ||
-                  Number(budgetData.diurna) ||
-                  Number(budgetData.cazare) ||
-                  Number(budgetData.alteCheltuieli)) > 0 && (
-                  <>
-                    <p>
-                      <strong>6.</strong> Următoarele cheltuieli vor fi
-                      suportate direct de către
-                      Beneficiar, sau, după caz, vor fi rambursate de către
-                      Beneficiar Furnizorului, considerându-se efectuate în
-                      numele și pentru Beneficiar:
-                    </p>
-                    <ul>
-                      {Number(budgetData.transport) > 0 && (
-                        <li>
-                          cheltuieli de transport până la suma de{" "}
-                          <strong>{budgetData.transport} LEI</strong>;
-                        </li>
-                      )}
-                      {Number(budgetData.diurna) > 0 && (
-                        <li>
-                          diurna <strong>{budgetData.diurna} LEI</strong>;
-                        </li>
-                      )}
-                      {Number(budgetData.cazare) > 0 && (
-                        <li>
-                          cheltuieli pentru cazare până la suma de{" "}
-                          <strong>{budgetData.cazare} LEI</strong>;
-                        </li>
-                      )}
-                      {Number(budgetData.alteCheltuieli) > 0 && (
-                        <li>
-                          alte cheltuieli precum:{" "}
-                          <strong>{budgetData.alteCheltuieli} LEI</strong>.
-                        </li>
-                      )}
-                    </ul>
-                  </>
-                )}
-                {eventData.observatii && (
-                  <p>
-                    <strong>Observații / Condiții particulare:</strong>{" "}
-                    {eventData.observatii}
-                  </p>
-                )}
+                      return (
+                        <div key={cl.id}>
+                          {inner}
+                          {cl.items && (
+                            <ul>
+                              {cl.items.map((it, i) => (
+                                <li key={i}>{renderText(it, idMap)}</li>
+                              ))}
+                            </ul>
+                          )}
+                          {editMode && onClauzeChange && (
+                            <ClauzaControls
+                              clauza={cl}
+                              custom={custom}
+                              onChange={setCustom}
+                              isCustom={cl._custom}
+                              fallbackText={reactToText(inner).replace(/^\s*\d+(\.\d+)*\.\s*/, "").trim()}
+                              idMap={idMap}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                    {editMode && onClauzeChange && (
+                      <AdaugaLaFinal sectiuneId={sec.id} custom={custom} onChange={setCustom} idMap={idMap} />
+                    )}
+                  </div>
+                );
+              })}
 
-                <p>
-                  <strong>7.</strong> Plata se va face în lei, pe baza facturii
-                  fiscale emise de către Furnizor, în termen de{" "}
-                  <strong>10 zile lucrătoare</strong> de la primirea facturii,
-                  în contul indicat de Furnizor.
-                </p>
-
-                <div className="total-highlight">
-                  Total plată: {calculeazaTotal()} LEI
-                </div>
-              </div>
+              <div className="total-highlight">Total plată: {calculeazaTotal()} LEI</div>
 
               <div className="doc-signatures">
                 <div className="signature-box">
                   <h4>FURNIZOR</h4>
-                  <p>
-                    <strong>ALUMA S.R.L.</strong>
-                  </p>
-                  <p>
-                    <strong>Ioana-Adriana Apostol</strong>
-                  </p>
+                  <p><strong>ALUMA S.R.L.</strong></p>
+                  <p><strong>Ioana-Adriana Apostol</strong></p>
+                  <img src="/semnatura.png" alt="Semnătură" className="sign-img" />
                   <div className="sign-space"></div>
                 </div>
                 <div className="signature-box">
                   <h4>BENEFICIAR</h4>
-                  <p>
-                    <strong>
-                      {clientData.numeBeneficiar ||
-                        ".............................."}
-                    </strong>
-                  </p>
-                  <p>
-                    <strong>
-                      {clientData.reprezentant ||
-                        ".............................."}
-                    </strong>
-                  </p>
+                  <p><strong>{clientData.numeBeneficiar || ".............................."}</strong></p>
+                  <p><strong>{clientData.reprezentant || ".............................."}</strong></p>
                   <div className="sign-space"></div>
                 </div>
               </div>

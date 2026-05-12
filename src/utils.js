@@ -342,10 +342,24 @@ export const fetchBnrRate = async (currency, dmyDate) => {
   if (!p) throw new Error("Data invalidă");
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const iso = `${p.getFullYear()}-${String(p.getMonth() + 1).padStart(2, "0")}-${String(p.getDate()).padStart(2, "0")}`;
-  const isToday = p.getTime() === today.getTime();
-  const url = isToday ? "/cursbnr/curs-bnr-azi" : `/cursbnr/arhiva-curs-bnr-${iso}`;
-  const res = await fetch(url);
+  // dacă data e în viitor → cere cursul de azi
+  if (p > today) p.setTime(today.getTime());
+
+  const fetchFor = async (date) => {
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const isToday = date.getTime() === today.getTime();
+    const url = isToday ? "/cursbnr/curs-bnr-azi" : `/cursbnr/arhiva-curs-bnr-${iso}`;
+    return fetch(url);
+  };
+
+  // încearcă data cerută; dacă 404 (weekend/sărbătoare), dă înapoi până 7 zile
+  let res = await fetchFor(p);
+  let attempts = 0;
+  while (!res.ok && attempts < 7) {
+    p.setDate(p.getDate() - 1);
+    res = await fetchFor(p);
+    attempts++;
+  }
   if (!res.ok) throw new Error(`cursbnr.ro ${res.status}`);
   const html = await res.text();
   // Extrage TOATE rândurile din tabelul de curs și construiește harta { COD: rate }.

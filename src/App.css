@@ -7,8 +7,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
 
 :root {
-  --bg: #f4f1ec;
-  --paper: #fbfaf7;
+  --bg: #F0F4F8;
+  --paper: #ffffff;
   --ink: #1a1814;
   --ink-2: #3a3530;
   --muted: #84807a;
@@ -35,14 +35,21 @@ html, body, #root {
 }
 
 body {
-  font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
-.serif { font-family: "Instrument Serif", "Times New Roman", serif; font-weight: 400; }
-.mono  { font-family: "Geist Mono", ui-monospace, monospace; font-feature-settings: "tnum"; }
+.preview-container,
+.preview-container *,
+.preview-container *::before,
+.preview-container *::after {
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+.serif { font-family: "Instrument Serif", serif; font-weight: 400; }
+.mono  { font-family: "Geist Mono", monospace; font-feature-settings: "tnum"; }
 
 /* ---------- Shell ---------- */
 .app-container {
@@ -56,24 +63,70 @@ body {
 
 /* ---------- Sidebar ---------- */
 .app-sidebar {
-  background: #1a1814;
-  color: #e4ddcf;
-  padding: 22px 18px;
+  background: linear-gradient(180deg, #6366F1 0%, #34CAE8 55%, #ffffff 100%);
+  color: #1A1A1A;
+  padding: 18px 16px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;
+  font-size: 14px;
+  border-right: 1px solid #E2E8F0;
 }
+.app-sidebar .nav-item { padding: 7px 10px; font-size: 13.5px; color: #000; font-weight: 700; }
+.app-sidebar .nav-item:hover { background: rgba(255,255,255,0.25); color: #000; }
+.app-sidebar .nav-item.active { background: rgba(255,255,255,0.45); color: #000; }
+.app-sidebar .nav-item.active .nav-num { background: #1A1A1A; color: #fff; }
+.app-sidebar .nav-num { background: rgba(255,255,255,0.45); color: #000; font-weight: 700; }
+.app-sidebar .nav-meta { color: #1A1A1A; font-weight: 700; }
+.app-sidebar .nav-del { color: #1A1A1A; }
+.app-sidebar .nav-del:hover { background: rgba(239,68,68,0.2); color: #B91C1C; }
+.app-sidebar .nav-section-label {
+  font-size: 11.5px;
+  padding: 10px 8px 5px;
+  margin-top: 6px;
+  color: #000;
+  font-weight: 800;
+}
+.app-sidebar .nav-section-label.clickable:hover { color: #000; background: rgba(255,255,255,0.25); }
+.app-sidebar .nav-section-label.clickable.active { color: #000; background: rgba(255,255,255,0.45); }
+.app-sidebar .brand { padding: 6px 8px 14px; margin-bottom: 8px; border-bottom-color: rgba(255,255,255,0.35); }
+.app-sidebar .brand-logo { width: 44px; height: 44px; background: #fff; }
+.app-sidebar .brand-name { color: #000; font-weight: 700; }
+.app-sidebar .brand-sub { color: #000; font-weight: 700; }
+.app-sidebar .sidebar-bottom { border-top-color: rgba(255,255,255,0.35); }
+.app-sidebar .user-name { color: #000; font-weight: 700; }
+.app-sidebar .user-role { color: #1A1A1A; font-weight: 600; }
 .brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   padding: 6px 8px 22px;
   border-bottom: 1px solid rgba(228, 221, 207, 0.1);
   margin-bottom: 14px;
+  transition: opacity .15s ease;
+}
+.brand:hover { opacity: 0.85; }
+.brand-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  background: transparent;
+  border-radius: 8px;
+  padding: 2px;
+  display: block;
+  background: #f5efe4;
+  padding: 4px;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.brand, .brand:focus, .brand:focus-visible {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .brand-mark {
   width: 28px; height: 28px;
@@ -104,6 +157,19 @@ body {
   text-transform: uppercase;
   color: #6f6a5e;
   padding: 16px 8px 6px;
+}
+.nav-section-label.clickable {
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.nav-section-label.clickable:hover {
+  color: #d4a72c;
+  background: rgba(212,167,44,0.06);
+}
+.nav-section-label.clickable.active {
+  color: #d4a72c;
+  background: rgba(212,167,44,0.1);
 }
 .nav-item {
   display: flex;
@@ -641,8 +707,12 @@ body {
 /* ---------- Calendar inline button ---------- */
 .date-with-cal { display: flex; gap: 8px; align-items: stretch; }
 .date-with-cal input[type="text"] { flex: 1; }
+.date-with-cal > div { display: flex; }
 .cal-btn {
   padding: 0 14px;
+  height: 100%;
+  align-self: stretch;
+  box-sizing: border-box;
   background: var(--ink);
   color: var(--paper);
   border: none;
@@ -711,20 +781,24 @@ body {
    DOCUMENT (Contract / Anexa) — unchanged behaviour, polished
    ================================================================== */
 .preview-container {
-  max-width: 900px;
+  max-width: none;
   margin: 0 auto;
   padding: 24px;
+  background: #e7e3da;
+  min-height: 100vh;
 }
 
 .document-page {
   width: 210mm;
   min-height: 297mm;
   box-sizing: border-box;
-  background: #fff;
-  padding: 15mm 15mm 15mm 25.4mm;
-  margin: 10mm auto;
-  box-shadow: 0 8px 24px rgba(26, 24, 20, 0.08);
+  background-color: #fff;
+  padding: 15mm 15mm 15mm 20mm;
+  margin: 0 auto 14mm auto;
+  box-shadow: 0 10px 28px rgba(26, 24, 20, 0.18);
   border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
 
   color: #000;
   font-family: "Times New Roman", Times, serif;
@@ -745,12 +819,12 @@ body {
 .print-table { width: 100%; border-collapse: collapse; }
 .print-table td { padding: 0; }
 
-.doc-header { text-align: left; margin-top: -8mm; margin-bottom: 4px; }
+.doc-header { text-align: left; margin-top: -6mm; margin-bottom: 4px; }
 .doc-header img {
   display: block;
   margin: 0;
-  width: 65mm;
-  height: 32mm;
+  width: 85mm;
+  height: 42mm;
   object-fit: contain;
   object-position: left top;
   filter: contrast(1.6) saturate(1.4);
@@ -760,27 +834,52 @@ body {
 .doc-footer {
   text-align: center;
   margin-top: 8px;
+  position: relative;
+  z-index: 10;
+  background: #fff;
+  padding: 4px 0 0;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 .doc-footer img {
   display: block;
-  width: 100%;
-  height: 12mm;
-  object-fit: cover;
-  object-position: center 70%;
+  width: 190mm;
+  height: 20mm;
+  max-width: 190mm;
+  max-height: 20mm;
+  margin: 0 -5mm 0 -10mm;
+  object-fit: fill;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 thead.print-header { display: table-header-group; }
 tfoot.print-footer { display: table-footer-group; }
 
+/* Marcaje vizuale de pagină (doar pe ecran) */
+.page-marks { display: none; }
+.page-mark-num {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Instrument Serif", serif;
+  font-size: 11pt;
+  color: #6b5a2e;
+  background: #fff;
+  border: 1px solid #d4a72c;
+  border-radius: 999px;
+  padding: 1px 10px;
+  white-space: nowrap;
+}
+
 .doc-title {
+  font-family: "Times New Roman", Times, serif;
   text-align: center;
-  font-size: 12pt;
+  font-size: 14pt;
   font-weight: bold;
   margin-bottom: 5px;
   text-transform: uppercase;
 }
-.doc-subtitle { text-align: center; font-weight: bold; margin-bottom: 20px; }
+.doc-subtitle { text-align: center; font-weight: bold; margin-bottom: 20px; font-size: 12pt; }
 .text-center { text-align: center; }
 .doc-section { margin-bottom: 15px; }
 .doc-section p {
@@ -803,7 +902,14 @@ tfoot.print-footer { display: table-footer-group; }
 .doc-signatures { display: flex; justify-content: space-between; margin-top: 40px; }
 .signature-box { width: 45%; }
 .signature-box p { margin-top: 6pt; margin-bottom: 0; }
-.sign-space { height: 60px; border-bottom: 1px dotted #000; margin-top: 20px; }
+.sign-space { display: none; }
+.sign-img {
+  display: block;
+  max-width: 60mm;
+  max-height: 25mm;
+  margin-top: 6px;
+  background: #fff;
+}
 .total-highlight {
   margin-top: 15pt;
   text-align: right;
@@ -813,6 +919,28 @@ tfoot.print-footer { display: table-footer-group; }
 
 .page-number { display: none; }
 
+@media screen {
+  .page-break-before {
+    position: relative;
+    margin-top: 22pt;
+    padding-top: 22pt;
+    border-top: 1px dashed #c9c2b2;
+  }
+  .page-break-before::before {
+    content: "Pagină nouă";
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #8a7e5c;
+    background: #fff;
+    padding: 0 8px;
+  }
+}
+
 @media print {
   body { background: white; }
   .no-print { display: none !important; }
@@ -820,20 +948,28 @@ tfoot.print-footer { display: table-footer-group; }
     width: initial;
     min-height: initial;
     box-shadow: none;
+    background-image: none;
     padding: 0;
     margin: 0;
     border: none;
+    page-break-after: always;
+    break-after: page;
+  }
+  .page-marks { display: none !important; }
+  .document-page:last-of-type {
+    page-break-after: auto;
+    break-after: auto;
   }
   .page-break { page-break-before: always; }
+  .page-break-before { page-break-before: always; break-before: page; }
   @page {
     size: A4;
-    margin: 15mm 15mm 15mm 25.4mm;
-    @bottom-right {
+    margin: 15mm 10mm 18mm 20mm;
+    @bottom-center {
       content: counter(page);
       font-family: "Times New Roman", Times, serif;
       font-size: 10pt;
       color: #000;
-      margin-top: 6mm;
     }
   }
 }

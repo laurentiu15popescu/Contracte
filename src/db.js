@@ -5,6 +5,13 @@ export const db = new Dexie("AlumaContracte");
 db.version(1).stores({
   contracte: "++id, numarContract, dataContract, cui, numeBeneficiar, updatedAt",
 });
+db.version(2).stores({
+  contracte: "++id, numarContract, dataContract, cui, numeBeneficiar, updatedAt, status",
+}).upgrade((tx) =>
+  tx.table("contracte").toCollection().modify((c) => {
+    if (!c.status) c.status = "draft";
+  })
+);
 
 const sumBudget = (b) =>
   (Number(b?.valoareServicii) || 0) +
@@ -30,7 +37,31 @@ export const saveContract = async ({ clientData, anexe, id }) => {
     await db.contracte.update(id, record);
     return id;
   }
-  return await db.contracte.add({ ...record, createdAt: now });
+  return await db.contracte.add({ ...record, createdAt: now, status: "draft" });
+};
+
+export const markContractTrimis = (id) =>
+  db.contracte.update(id, { status: "trimis", updatedAt: new Date().toISOString() });
+
+export const listDrafturi = () =>
+  db.contracte.where("status").equals("draft").reverse().sortBy("updatedAt");
+
+export const STATUS_STEPS = ["draft", "trimis", "semnat", "finalizat"];
+
+export const setContractStatusByNumar = async (numarContract, status) => {
+  if (!numarContract) return 0;
+  return db.contracte
+    .where("numarContract").equals(numarContract)
+    .modify({ status, updatedAt: new Date().toISOString() });
+};
+
+export const getStatusMapByNumar = async () => {
+  const all = await db.contracte.toArray();
+  const out = {};
+  for (const c of all) {
+    if (c.numarContract) out[c.numarContract] = c.status || "draft";
+  }
+  return out;
 };
 
 export const listContracte = async (search = "") => {
@@ -46,6 +77,9 @@ export const listContracte = async (search = "") => {
 };
 
 export const getContract = (id) => db.contracte.get(id);
+
+export const getContractByNumar = (nr) =>
+  db.contracte.where("numarContract").equals(nr).first();
 
 export const deleteContract = (id) => db.contracte.delete(id);
 
