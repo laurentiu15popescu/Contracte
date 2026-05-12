@@ -899,6 +899,12 @@ function App() {
             key={i}
             className={`nav-item ${step === `anexa-${i}` ? "active" : ""}`}
             onClick={() => setStep(`anexa-${i}`)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setStep(`anexa-${i}`);
+              }
+            }}
             role="button"
             tabIndex={0}
           >
@@ -908,7 +914,8 @@ function App() {
             <button
               type="button"
               className="nav-del"
-              title="Șterge anexa"
+              title={`Șterge Anexa ${i + 1}`}
+              aria-label={`Șterge Anexa ${i + 1}`}
               onClick={(e) => {
                 e.stopPropagation();
                 if (!confirm(`Ștergi Anexa ${i + 1}?`)) return;
@@ -997,6 +1004,7 @@ function App() {
           <div className="topbar-search">
             <input
               type="text"
+              aria-label="Caută client, contract, CUI"
               placeholder="Caută client, contract, CUI…"
               value={search}
               onChange={(e) => { setSearch(e.target.value); if (step !== "salvate") setStep("salvate"); }}
