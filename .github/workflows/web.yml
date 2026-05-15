@@ -1,9 +1,9 @@
 name: Deploy Web
 
+# Dezactivat: deploy-ul web e gestionat de integrarea Git nativă Cloudflare Pages.
+# Rulare doar manuală, dacă e nevoie (necesită secretele CLOUDFLARE_*).
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: web-deploy
