@@ -30,11 +30,13 @@ import {
 import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel } from "./shared/db";
 import { extractFromDocx } from "./Sistem/importDocx";
 import { db } from "./shared/firebase";
+import { LogoutButton } from "./shared/AuthGate";
 import { doc, setDoc, deleteDoc, getDocs, getDoc, query, where, collection, serverTimestamp } from "firebase/firestore";
 import Biblioteca from "./Biblioteca/Biblioteca";
 import Dashboard from "./Dashboard/Dashboard";
 import Rapoarte from "./Rapoarte/Rapoarte";
 import HubPage from "./shared/HubPage";
+import ContSetari from "./Sistem/ContSetari";
 import { useDialog } from "./shared/Dialog";
 
 /* ---------- empty factories (neschimbate) ---------- */
@@ -984,6 +986,7 @@ function App() {
   const isHubFlux = step === "hub-flux";
   const isHubBiblioteca = step === "hub-biblioteca";
   const isHubSistem = step === "hub-sistem";
+  const isCont = step === "cont";
   const isHub = isHubFlux || isHubBiblioteca || isHubSistem;
   const bibliotecaTab = step === "biblioteca-clienti" ? "clienti" : step === "biblioteca-modele" ? "modele" : "contracte";
 
@@ -1154,6 +1157,12 @@ function App() {
           <span>↑ Import .docx / PDF</span>
         </button>
         <input ref={docFileRef} type="file" accept=".docx,.pdf" style={{ display: "none" }} onChange={handleImportDocx} />
+        <button
+          className={`nav-item ${isCont ? "active" : ""}`}
+          onClick={() => setStep("cont")}
+        >
+          <span>👤 Contul meu</span>
+        </button>
 
         <div className="sidebar-bottom">
           <div className="user-chip">
@@ -1162,6 +1171,7 @@ function App() {
               <div className="user-name">ALUMA S.R.L.</div>
               <div className="user-role">Editor contracte</div>
             </div>
+            <LogoutButton />
           </div>
         </div>
       </aside>
@@ -1336,12 +1346,16 @@ function App() {
               { color: "#F59E0B", icon: "↓", label: "Backup DB", desc: "Backup integral baza locală", onClick: handleExportBackup },
               { color: "#EF4444", icon: "↑", label: "Restaurează backup", desc: "Restaurează din backup", onClick: () => backupFileRef.current?.click() },
               { color: "#8B5CF6", icon: "📥", label: "Import .docx / PDF", desc: "Pre-populează din Word/PDF", onClick: () => docFileRef.current?.click() },
+              { color: "#0EA5E9", icon: "👤", label: "Contul meu", desc: "Parolă, email, telefon", onClick: () => setStep("cont") },
             ]}
           />
         )}
 
+        {/* Contul meu */}
+        {isCont && <ContSetari />}
+
         {/* Content */}
-        {!isDashboard && !isRapoarte && !isHub && (
+        {!isDashboard && !isRapoarte && !isHub && !isCont && (
         <div className={`content ${isSaved ? "single" : ""}`}>
 
           {/* Page head */}
