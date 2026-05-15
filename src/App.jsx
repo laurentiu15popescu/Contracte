@@ -114,6 +114,8 @@ function App() {
   const { alert, confirm, prompt } = useDialog();
   const stored = loadLocal();
   const [step, setStep] = useState("dashboard");
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => { setMenuOpen(false); }, [step]); // închide drawer-ul la navigare (mobil)
   const [showPreview, setShowPreview] = useState(false);
   const [blankPreview, setBlankPreview] = useState(false);
   const [blankData, setBlankData] = useState(null);
@@ -1029,7 +1031,12 @@ function App() {
   };
 
   return (
-    <div className="app-container no-print">
+    <div className={`app-container no-print${menuOpen ? " menu-open" : ""}`}>
+      <div
+        className="sidebar-backdrop"
+        onClick={() => setMenuOpen(false)}
+        aria-hidden="true"
+      />
       {/* ============ SIDEBAR ============ */}
       <aside className="app-sidebar">
         <div
@@ -1181,6 +1188,14 @@ function App() {
 
         {/* Topbar */}
         <div className="topbar">
+          <button
+            type="button"
+            className="hamburger"
+            aria-label="Meniu"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <span /><span /><span />
+          </button>
           <div className="topbar-search">
             <input
               type="text"
