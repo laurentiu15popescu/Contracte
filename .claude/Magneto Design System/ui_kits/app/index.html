@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MagnetoApp — UI Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0a0a0a; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 24px 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: translateY(0); } }
+  .anim-fade { animation: fadeIn 0.5s cubic-bezier(0.34,1.2,0.64,1) both; }
+  .anim-slide { animation: slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1) both; }
+  input::placeholder { color: #A3A3A3; }
+  input, button, textarea { font-family: 'Plus Jakarta Sans', sans-serif; }
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="components/Theme.jsx"></script>
+<script type="text/babel" src="components/AppButton.jsx"></script>
+<script type="text/babel" src="components/StatusBadge.jsx"></script>
+<script type="text/babel" src="components/StatCard.jsx"></script>
+<script type="text/babel" src="components/FormInput.jsx"></script>
+<script type="text/babel" src="components/QuickActionTile.jsx"></script>
+<script type="text/babel">
+
+// ─── ICONS ───────────────────────────────────────────────────
+const Ico = ({ d, w=20, c='currentColor', fill='none', sw=2 }) =>
+  <svg width={w} height={w} viewBox="0 0 24 24" fill={fill} stroke={c} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    {d.map((p,i) => p.startsWith('M')||p.startsWith('L')||p.startsWith('A')||p.startsWith('C')||p.startsWith('Q')||p.startsWith('Z') ? <path key={i} d={p}/> : null)}
+  </svg>;
+
+const IcoMoon     = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>;
+const IcoSun      = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+const IcoBell     = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>;
+const IcoPower    = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18.36 6.64a9 9 0 11-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>;
+const IcoWallet   = ({c,s=22})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
+const IcoCalendar = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const IcoTrophy   = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>;
+const IcoDollar   = ({c,s=22})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>;
+const IcoUsers    = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>;
+const IcoBox      = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>;
+const IcoLocation = ({c,s=16})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+const IcoFlame    = ({c,s=16})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 01-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/></svg>;
+const IcoMail     = ({c,s=18})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>;
+const IcoLock     = ({c,s=18})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>;
+const IcoEye      = ({c,s=18})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
+const IcoArrow    = ({c,s=18})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
+const IcoHome     = ({c,s=22})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+const IcoShield   = ({c,s=16})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
+const IcoCheck    = ({c,s=16})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const IcoChevron  = ({c,s=16,dir='right'})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{dir==='right'?<polyline points="9 18 15 12 9 6"/>:<polyline points="15 18 9 12 15 6"/>}</svg>;
+const IcoEdit     = ({c,s=16})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IcoUser     = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const IcoCamera   = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>;
+const IcoSettings = ({c,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>;
+
+// ─── SHARED COMPONENTS ────────────────────────────────────────
+function Phone({ children, theme }) {
+  const c = theme.colors;
+  return (
+    <div style={{ width: 390, minHeight: 760, background: c.bg, borderRadius: 44, overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      <div style={{ background: c.bg, padding: '14px 28px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: c.text }}>9:41</span>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1" fill={c.text} opacity="0.4"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill={c.text} opacity="0.6"/><rect x="9" y="0" width="3" height="12" rx="1" fill={c.text}/></svg>
+          <svg width="15" height="12" viewBox="0 0 24 24" fill="none" stroke={c.text} strokeWidth="2"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+          <div style={{ width: 22, height: 11, borderRadius: 3, border: `1px solid ${c.text}`, padding: '2px', display: 'flex', alignItems: 'center' }}>
+            <div style={{ width: '80%', height: '100%', background: c.success, borderRadius: 2 }}/>
+          </div>
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>{children}</div>
+      <div style={{ background: c.bg, display: 'flex', justifyContent: 'center', paddingBottom: 10, paddingTop: 8, flexShrink: 0 }}>
+        <div style={{ width: 120, height: 5, background: c.text, opacity: 0.2, borderRadius: 99 }}/>
+      </div>
+    </div>
+  );
+}
+
+function TabBar({ theme, active, onNav }) {
+  const c = theme.colors;
+  const tabs = [
+    { id: 'home', label: 'Acasă', icon: (a) => <IcoHome c={a?c.brand:c.tabInactive} s={22}/> },
+    { id: 'events', label: 'Events', icon: (a) => <IcoCalendar c={a?c.brand:c.tabInactive} s={22}/> },
+    { id: 'incasari', label: 'Plăți', icon: (a) => <IcoDollar c={a?c.brand:c.tabInactive} s={22}/> },
+    { id: 'profil', label: 'Profil', icon: (a) => <IcoUser c={a?c.brand:c.tabInactive} s={22}/> },
+  ];
+  return (
+    <div style={{ position: 'sticky', bottom: 0, background: c.surface, borderTop: `1px solid ${c.border}`, display: 'flex', padding: '8px 0 10px', zIndex: 50, boxShadow: theme.softShadow }}>
+      {tabs.map(t => {
+        const isActive = active === t.id;
+        return (
+          <button key={t.id} onClick={() => onNav(t.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}>
+            {t.icon(isActive)}
+            <span style={{ fontSize: 10, fontWeight: 700, color: isActive ? c.brand : c.tabInactive }}>{t.label}</span>
+            {isActive && <div style={{ width: 4, height: 4, borderRadius: 2, background: c.brand }}/>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SectionLabel({ children, theme, style={} }) {
+  return <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', color: theme.colors.textSecondary, marginBottom: 10, ...style }}>{children}</div>;
+}
+
+// ─── LOGIN ────────────────────────────────────────────────────
+function LoginScreen({ theme, onLogin }) {
+  const c = theme.colors;
+  const [email, setEmail] = React.useState('');
+  const [pw, setPw] = React.useState('');
+  const [showPw, setShowPw] = React.useState(false);
+  const [remember, setRemember] = React.useState(false);
+  const grad = theme.isDark ? 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#312e81 100%)' : 'linear-gradient(135deg,#f8fafc 0%,#e0e7ff 60%,#4f46e5 100%)';
+  return (
+    <div style={{ minHeight: '100%', background: grad, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: 20, position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: -80, left: -60, width: 240, height: 240, borderRadius: '50%', background: c.brand, opacity: 0.15, filter: 'blur(40px)', pointerEvents: 'none' }}/>
+      <div style={{ position: 'absolute', bottom: -80, right: -60, width: 240, height: 240, borderRadius: '50%', background: c.accentSecondary, opacity: 0.15, filter: 'blur(40px)', pointerEvents: 'none' }}/>
+      <div className="anim-fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ width: 110, height: 110, borderRadius: 55, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+          <img src="../../assets/logo_magneto.png" style={{ width: '90%', height: '90%', objectFit: 'contain' }} alt="Logo"/>
+        </div>
+        <p style={{ marginTop: 14, fontSize: 13, fontWeight: 700, color: theme.isDark ? '#cbd5e1' : '#737373', textAlign: 'center' }}>"Surprinde emoția din fiecare cadru."</p>
+      </div>
+      <div className="anim-slide" style={{ width: '100%', maxWidth: 350, background: theme.isDark ? 'rgba(30,41,59,0.65)' : 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)', border: `1px solid ${theme.isDark ? 'rgba(255,255,255,0.1)' : '#fff'}`, borderRadius: 24, padding: 22, boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+        <FormInput label="Email" placeholder="fotograf@magneto.ro" value={email} onChange={e=>setEmail(e.target.value)} leftIcon={<IcoMail c={c.subText}/>}/>
+        <FormInput label="Parolă" placeholder="••••••••" type={showPw?'text':'password'} value={pw} onChange={e=>setPw(e.target.value)} leftIcon={<IcoLock c={c.subText}/>} rightIcon={<span style={{cursor:'pointer'}} onClick={()=>setShowPw(p=>!p)}><IcoEye c={c.subText}/></span>}/>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4, marginBottom:18, cursor:'pointer' }} onClick={()=>setRemember(r=>!r)}>
+          <div style={{ width:18, height:18, borderRadius:5, border:`2px solid ${remember?c.brand:c.subText}`, background:remember?c.brand:'transparent', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            {remember && <IcoCheck c="#fff" s={12}/>}
+          </div>
+          <span style={{ fontSize:13, color:c.subText }}>Reține-mă</span>
+        </div>
+        <AppButton variant="gradient" label="Conectare" icon={<IcoArrow c="#fff" s={18}/>} iconPosition="right" size="lg" fullWidth onPress={()=>onLogin('photographer')}/>
+        <button onClick={()=>onLogin('admin')} style={{ marginTop:12, width:'100%', background:'none', border:'none', cursor:'pointer', color:c.subText, fontSize:13 }}>
+          Admin? <span style={{ color:c.brand, fontWeight:700 }}>Intră ca Admin →</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── PHOTOGRAPHER HOME ────────────────────────────────────────
+function PhotographerHome({ theme, onNav }) {
+  const c = theme.colors;
+  const [incasareOpen, setIncasareOpen] = React.useState(false);
+  const [amount, setAmount] = React.useState('');
+  const [method, setMethod] = React.useState('Cash');
+  const progress = 68;
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <div style={{ flex:1, overflowY:'auto', padding:'0 20px 16px' }}>
+        {/* Header */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, paddingTop:4 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:44, height:44, borderRadius:14, background:`linear-gradient(135deg,${c.brand},${c.accentSecondary})`, padding:2 }}>
+              <img src="../../assets/img_avatar.png" style={{ width:'100%', height:'100%', borderRadius:12, objectFit:'cover' }} alt=""/>
+            </div>
+            <div>
+              <div style={{ fontSize:11, color:c.subText, fontWeight:700 }}>Bună ziua ☀️</div>
+              <div style={{ fontSize:17, fontWeight:900, color:c.text }}>Alexandru</div>
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:6 }}>
+            <button onClick={()=>onNav('toggle-theme')} style={{ width:38, height:38, borderRadius:11, border:`1px solid ${c.border}`, background:c.surface, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {theme.isDark?<IcoSun c={c.text} s={17}/>:<IcoMoon c={c.text} s={17}/>}
+            </button>
+            <div style={{ position:'relative' }}>
+              <button style={{ width:38, height:38, borderRadius:11, border:`1px solid ${c.border}`, background:c.surface, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <IcoBell c={c.text} s={17}/>
+              </button>
+              <div style={{ position:'absolute', top:-4, right:-4, width:17, height:17, borderRadius:9, background:c.danger, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:900, color:'#fff' }}>3</div>
+            </div>
+          </div>
+        </div>
+        {/* Quote */}
+        <div style={{ background:c.card, borderRadius:14, padding:'11px 14px', borderLeft:`4px solid ${c.brand}`, border:`1px solid ${c.border}`, borderLeftWidth:4, marginBottom:14, boxShadow:theme.softShadow }}>
+          <p style={{ fontSize:13, fontStyle:'italic', fontWeight:600, color:c.text, lineHeight:'20px' }}>"Ești pe val! Ține ritmul."</p>
+        </div>
+        {/* Next event */}
+        <div style={{ background:c.card, borderRadius:18, padding:14, border:`1px solid ${c.border}`, boxShadow:theme.softShadow, marginBottom:14 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+              <IcoCalendar c={c.brand} s={13}/>
+              <span style={{ fontSize:10, fontWeight:800, letterSpacing:'0.8px', textTransform:'uppercase', color:c.brand }}>Următorul eveniment</span>
+            </div>
+            <div style={{ background:c.surfaceHighlight, borderRadius:7, padding:'3px 7px' }}>
+              <span style={{ fontSize:9, fontWeight:800, color:c.text }}>azi</span>
+            </div>
+          </div>
+          <div style={{ fontSize:16, fontWeight:900, color:c.text, marginBottom:6 }}>Concert Electric Castle</div>
+          <div style={{ display:'flex', gap:12 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={c.subText} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span style={{ fontSize:10, fontWeight:700, color:c.subText }}>01.07.2025 • 18:00</span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+              <IcoLocation c={c.subText} s={11}/>
+              <span style={{ fontSize:10, fontWeight:700, color:c.subText }}>Bontida</span>
+            </div>
+          </div>
+          <button style={{ marginTop:10, width:'100%', background:c.surfaceHighlight, border:`1px solid ${c.border}`, borderRadius:10, padding:'8px 0', display:'flex', alignItems:'center', justifyContent:'center', gap:5, cursor:'pointer' }}>
+            <IcoLocation c={c.brand} s={12}/>
+            <span style={{ fontSize:11, fontWeight:800, color:c.brand }}>Confirmă sosirea</span>
+          </button>
+        </div>
+        {/* Gauge */}
+        <div style={{ background:c.card, borderRadius:18, padding:'14px 18px', border:`1px solid ${c.border}`, boxShadow:theme.softShadow, marginBottom:14, display:'flex', flexDirection:'column', alignItems:'center' }}>
+          <div style={{ fontSize:10, fontWeight:800, letterSpacing:'0.8px', textTransform:'uppercase', color:c.subText, marginBottom:10 }}>Balanță Lunară</div>
+          <div style={{ position:'relative', width:130, height:72, marginBottom:6 }}>
+            <svg width="130" height="72" viewBox="0 0 130 72">
+              <path d="M8 72 A57 57 0 0 1 122 72" fill="none" stroke={c.progressTrack} strokeWidth="11" strokeLinecap="round"/>
+              <path d="M8 72 A57 57 0 0 1 122 72" fill="none" stroke={c.success} strokeWidth="11" strokeLinecap="round" strokeDasharray={`${180*progress/100} 180`}/>
+            </svg>
+            <div style={{ position:'absolute', bottom:0, left:'50%', transform:'translateX(-50%)', textAlign:'center' }}>
+              <div style={{ fontSize:22, fontWeight:900, color:c.text, lineHeight:1 }}>680</div>
+              <div style={{ fontSize:9, color:c.subText, fontWeight:700, marginTop:1 }}>/ 1000 magneți</div>
+            </div>
+          </div>
+        </div>
+        {/* Mini stats */}
+        <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+          {[{l:'Azi',v:47,col:c.brand,ico:<IcoCalendar c={c.brand} s={13}/>},{l:'Rank',v:'#2',col:c.success,ico:<IcoTrophy c={c.success} s={13}/>},{l:'Record',v:93,col:c.gold,ico:<IcoFlame c={c.gold} s={13}/>}].map((s,i)=>(
+            <div key={i} style={{ flex:1, background:c.card, borderRadius:12, padding:'10px 6px', border:`1px solid ${c.border}`, display:'flex', flexDirection:'column', alignItems:'center', gap:4, boxShadow:theme.softShadow }}>
+              <div style={{ width:26, height:26, borderRadius:7, background:`${s.col}18`, display:'flex', alignItems:'center', justifyContent:'center' }}>{s.ico}</div>
+              <div style={{ fontSize:9, color:c.subText, fontWeight:800, textTransform:'uppercase' }}>{s.l}</div>
+              <div style={{ fontSize:18, fontWeight:900, color:c.text }}>{s.v}</div>
+            </div>
+          ))}
+        </div>
+        {/* Direct actions */}
+        <SectionLabel theme={theme}>Acțiuni Directe</SectionLabel>
+        <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+          <button onClick={()=>setIncasareOpen(true)} style={{ flex:1, background:c.card, borderRadius:16, border:`1px solid ${c.border}`, padding:'16px 10px', display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer', boxShadow:theme.shadow }}>
+            <div style={{ width:48, height:48, borderRadius:14, background:`${c.brand}18`, display:'flex', alignItems:'center', justifyContent:'center' }}><IcoWallet c={c.brand} s={26}/></div>
+            <span style={{ fontSize:11, fontWeight:800, color:c.text }}>Adaugă Încasare</span>
+          </button>
+          <button style={{ flex:1, background:c.card, borderRadius:16, border:`1px solid ${c.border}`, padding:'16px 10px', display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer', boxShadow:theme.shadow }}>
+            <div style={{ width:48, height:48, borderRadius:14, background:`${c.success}18`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c.success} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <span style={{ fontSize:11, fontWeight:800, color:c.text }}>Raport Zilei</span>
+          </button>
+        </div>
+        {/* History */}
+        <SectionLabel theme={theme}>Istoric Azi</SectionLabel>
+        <div style={{ background:c.card, borderRadius:16, border:`1px solid ${c.border}`, boxShadow:theme.softShadow, overflow:'hidden' }}>
+          {[{ev:'Concert Electric Castle',m:'Cash',t:'20:14',v:'340'},{ev:'Concert Electric Castle',m:'Card',t:'19:52',v:'180'},{ev:'Concert Electric Castle',m:'Cash',t:'18:30',v:'200'}].map((inc,i,arr)=>(
+            <div key={i} style={{ display:'flex', alignItems:'center', padding:'12px 14px', borderBottom:i<arr.length-1?`1px solid ${c.separator}`:'none' }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:800, color:c.text }}>{inc.ev}</div>
+                <div style={{ fontSize:10, color:c.subText, marginTop:2 }}>{inc.t} • {inc.m} • Bontida</div>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <span style={{ fontSize:15, fontWeight:900, color:c.success }}>+{inc.v}</span>
+                {i===0&&<button style={{ width:28, height:28, borderRadius:8, background:`${c.brand}18`, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><IcoEdit c={c.brand} s={13}/></button>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <TabBar theme={theme} active="home" onNav={onNav}/>
+      {/* Income modal */}
+      {incasareOpen && (
+        <div style={{ position:'absolute', inset:0, background:c.overlay, display:'flex', alignItems:'flex-end', zIndex:100 }} onClick={()=>setIncasareOpen(false)}>
+          <div className="anim-slide" style={{ width:'100%', background:c.card, borderRadius:'22px 22px 0 0', padding:22, border:`1px solid ${c.border}` }} onClick={e=>e.stopPropagation()}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}><IcoWallet c={c.brand} s={20}/><span style={{ fontSize:15, fontWeight:800, color:c.text }}>Adaugă Încasare</span></div>
+              <button style={{ background:'none', border:'none', cursor:'pointer', fontSize:22, color:c.subText, lineHeight:1 }} onClick={()=>setIncasareOpen(false)}>×</button>
+            </div>
+            <div style={{ background:c.surfaceHighlight, borderRadius:14, padding:'12px 14px', display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+              <input value={amount} onChange={e=>setAmount(e.target.value.replace(/[^0-9]/g,''))} placeholder="0" style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:32, fontWeight:900, color:c.text }}/>
+              <span style={{ fontSize:16, fontWeight:800, color:c.subText }}>RON</span>
+            </div>
+            <div style={{ display:'flex', background:c.surfaceHighlight, borderRadius:10, padding:3, marginBottom:14, gap:3 }}>
+              {['Cash','Card'].map(m=>(
+                <button key={m} onClick={()=>setMethod(m)} style={{ flex:1, padding:'9px', borderRadius:8, border:'none', background:method===m?c.card:'transparent', fontSize:13, fontWeight:800, color:method===m?c.text:c.subText, cursor:'pointer', boxShadow:method===m?theme.softShadow:'none' }}>
+                  {m==='Cash'?'💵 Cash':'💳 Card'}
+                </button>
+              ))}
+            </div>
+            <div style={{ background:c.surfaceHighlight, borderRadius:12, padding:'10px 12px', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+              <IcoLocation c={c.success} s={13}/><span style={{ fontSize:12, fontWeight:700, color:c.success }}>Concert Electric Castle • Bontida</span>
+            </div>
+            <AppButton variant="gradient" label="Validare Încasare" fullWidth size="lg" onPress={()=>setIncasareOpen(false)}/>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── EVENTS SCREEN ────────────────────────────────────────────
+function EventsScreen({ theme, onNav }) {
+  const c = theme.colors;
+  const events = [
+    { titlu:'Concert Electric Castle', data:'01.07.2025', ora:'18:00', locatie:'Bontida', status:'confirmed' },
+    { titlu:'Nunta Ana & Mihai', data:'05.07.2025', ora:'14:00', locatie:'Cluj-Napoca', status:'confirmed' },
+    { titlu:'Festival Untold', data:'10.07.2025', ora:'20:00', locatie:'Cluj Arena', status:'pending' },
+    { titlu:'Botez Gabriel', data:'14.07.2025', ora:'11:00', locatie:'Sala Festivă', status:'confirmed' },
+    { titlu:'Concert Jazz în Parc', data:'18.07.2025', ora:'19:30', locatie:'Parcul Central', status:'pending' },
+  ];
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <div style={{ flex:1, overflowY:'auto', padding:'0 20px 16px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:4, marginBottom:16 }}>
+          <div style={{ fontSize:20, fontWeight:900, color:c.text }}>Programul Meu</div>
+          <button onClick={()=>onNav('toggle-theme')} style={{ width:36, height:36, borderRadius:10, border:`1px solid ${c.border}`, background:c.surface, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            {theme.isDark?<IcoSun c={c.text} s={16}/>:<IcoMoon c={c.text} s={16}/>}
+          </button>
+        </div>
+        {/* Month header */}
+        <div style={{ background:`linear-gradient(135deg,${c.brand},${c.accentSecondary})`, borderRadius:18, padding:'14px 16px', marginBottom:16, position:'relative', overflow:'hidden' }}>
+          <div style={{ fontSize:11, fontWeight:800, color:'rgba(255,255,255,0.7)', textTransform:'uppercase', letterSpacing:'0.8px' }}>Iulie 2025</div>
+          <div style={{ fontSize:28, fontWeight:900, color:'#fff', marginTop:2 }}>5 evenimente</div>
+          <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.8)', marginTop:4 }}>2 confirmări în așteptare</div>
+        </div>
+        {/* Event list */}
+        {events.map((ev,i)=>(
+          <div key={i} style={{ background:c.card, borderRadius:16, padding:'14px 14px', border:`1px solid ${c.border}`, boxShadow:theme.softShadow, marginBottom:8, display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:44, height:44, borderRadius:12, background:`${c.brand}18`, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <div style={{ fontSize:16, fontWeight:900, color:c.brand, lineHeight:1 }}>{ev.data.split('.')[0]}</div>
+              <div style={{ fontSize:9, fontWeight:800, color:c.brand, textTransform:'uppercase' }}>iUL</div>
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:c.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ev.titlu}</div>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:3 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={c.subText} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span style={{ fontSize:10, fontWeight:700, color:c.subText }}>{ev.ora}</span>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+                  <IcoLocation c={c.subText} s={10}/>
+                  <span style={{ fontSize:10, fontWeight:700, color:c.subText, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:80 }}>{ev.locatie}</span>
+                </div>
+              </div>
+            </div>
+            <StatusBadge label={ev.status==='confirmed'?'Confirmat':'Așteptare'} variant={ev.status==='confirmed'?'success':'warning'} size="sm"/>
+          </div>
+        ))}
+      </div>
+      <TabBar theme={theme} active="events" onNav={onNav}/>
+    </div>
+  );
+}
+
+// ─── INCASARI SCREEN ──────────────────────────────────────────
+function IncasariScreen({ theme, onNav }) {
+  const c = theme.colors;
+  const [tab, setTab] = React.useState('azi');
+  const data = {
+    azi: [
+      { ev:'Concert Electric Castle', m:'Cash', t:'20:14', v:340, loc:'Bontida' },
+      { ev:'Concert Electric Castle', m:'Card', t:'19:52', v:180, loc:'Bontida' },
+      { ev:'Concert Electric Castle', m:'Cash', t:'18:30', v:200, loc:'Bontida' },
+    ],
+    luna: [
+      { ev:'Nunta Popescu', m:'Cash', t:'28.06', v:840, loc:'Cluj' },
+      { ev:'Festival Summer', m:'Card', t:'25.06', v:1200, loc:'Sibiu' },
+      { ev:'Botez Maria', m:'Cash', t:'20.06', v:320, loc:'Cluj' },
+      { ev:'Concert Rock', m:'Card', t:'15.06', v:560, loc:'Bontida' },
+    ],
+  };
+  const current = data[tab];
+  const total = current.reduce((a,x)=>a+x.v, 0);
+  const cash = current.filter(x=>x.m==='Cash').reduce((a,x)=>a+x.v,0);
+  const card = current.filter(x=>x.m==='Card').reduce((a,x)=>a+x.v,0);
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <div style={{ flex:1, overflowY:'auto', padding:'0 20px 16px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:4, marginBottom:14 }}>
+          <div style={{ fontSize:20, fontWeight:900, color:c.text }}>Încasări</div>
+          <button onClick={()=>onNav('toggle-theme')} style={{ width:36, height:36, borderRadius:10, border:`1px solid ${c.border}`, background:c.surface, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            {theme.isDark?<IcoSun c={c.text} s={16}/>:<IcoMoon c={c.text} s={16}/>}
+          </button>
+        </div>
+        {/* Tab switcher */}
+        <div style={{ display:'flex', background:c.surfaceHighlight, borderRadius:12, padding:3, marginBottom:14, gap:3 }}>
+          {['azi','luna'].map(t=>(
+            <button key={t} onClick={()=>setTab(t)} style={{ flex:1, padding:'8px', borderRadius:10, border:'none', background:tab===t?c.card:'transparent', fontSize:12, fontWeight:800, color:tab===t?c.text:c.subText, cursor:'pointer', boxShadow:tab===t?theme.softShadow:'none', textTransform:'capitalize' }}>
+              {t==='azi'?'Azi':'Luna Aceasta'}
+            </button>
+          ))}
+        </div>
+        {/* Summary card */}
+        <div style={{ background:`linear-gradient(135deg,${c.brand}18,${c.accentSecondary}10)`, borderRadius:18, padding:'16px 16px', border:`1px solid ${c.border}`, marginBottom:14 }}>
+          <div style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.6px', color:c.subText }}>Total {tab==='azi'?'Azi':'Luna Aceasta'}</div>
+          <div style={{ fontSize:32, fontWeight:900, color:c.text, letterSpacing:'-1px', lineHeight:1, marginTop:4 }}>{total.toLocaleString('ro')} <span style={{ fontSize:16, fontWeight:700, color:c.subText }}>RON</span></div>
+          <div style={{ display:'flex', gap:16, marginTop:10 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <div style={{ width:8, height:8, borderRadius:4, background:c.success }}/>
+              <span style={{ fontSize:11, fontWeight:700, color:c.subText }}>Cash: <span style={{ color:c.text, fontWeight:900 }}>{cash.toLocaleString('ro')}</span></span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <div style={{ width:8, height:8, borderRadius:4, background:c.brand }}/>
+              <span style={{ fontSize:11, fontWeight:700, color:c.subText }}>Card: <span style={{ color:c.text, fontWeight:900 }}>{card.toLocaleString('ro')}</span></span>
+            </div>
+          </div>
+        </div>
+        {/* List */}
+        <div style={{ background:c.card, borderRadius:16, border:`1px solid ${c.border}`, boxShadow:theme.softShadow, overflow:'hidden' }}>
+          {current.map((inc,i)=>(
+            <div key={i} style={{ display:'flex', alignItems:'center', padding:'12px 14px', borderBottom:i<current.length-1?`1px solid ${c.separator}`:'none' }}>
+              <div style={{ width:36, height:36, borderRadius:10, background:inc.m==='Cash'?`${c.success}18`:`${c.brand}18`, display:'flex', alignItems:'center', justifyContent:'center', marginRight:12, flexShrink:0 }}>
+                <span style={{ fontSize:14 }}>{inc.m==='Cash'?'💵':'💳'}</span>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:12, fontWeight:800, color:c.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{inc.ev}</div>
+                <div style={{ fontSize:10, color:c.subText, marginTop:2 }}>{inc.t} • {inc.loc}</div>
+              </div>
+              <span style={{ fontSize:15, fontWeight:900, color:c.success }}>+{inc.v.toLocaleString('ro')}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <TabBar theme={theme} active="incasari" onNav={onNav}/>
+    </div>
+  );
+}
+
+// ─── GAMIFICATION / RANKING ───────────────────────────────────
+function GamificationScreen({ theme, onNav }) {
+  const c = theme.colors;
+  const leaderboard = [
+    { name:'Alexandru P.', total:2840, mag:142, rank:1 },
+    { name:'Maria S.',     total:2310, mag:115, rank:2 },
+    { name:'Ionuț D.',     total:1950, mag:97,  rank:3 },
+    { name:'Andreea M.',   total:1680, mag:84,  rank:4 },
+    { name:'Bogdan T.',    total:1420, mag:71,  rank:5 },
+  ];
+  const rankColors = [c.rank1, c.rank2, c.rank3];
+  const rankIcons = ['🏆','🥈','🥉'];
+  const myTotal = 2840; const target = 4000;
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <div style={{ flex:1, overflowY:'auto', padding:'0 20px 16px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:4, marginBottom:14 }}>
+          <div style={{ fontSize:20, fontWeight:900, color:c.text }}>Top & Target</div>
+          <button onClick={()=>onNav('toggle-theme')} style={{ width:36, height:36, borderRadius:10, border:`1px solid ${c.border}`, background:c.surface, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            {theme.isDark?<IcoSun c={c.text} s={16}/>:<IcoMoon c={c.text} s={16}/>}
+          </button>
+        </div>
+        {/* My rank hero */}
+        <div style={{ background:`linear-gradient(135deg,${c.rank1}22,${c.rank2}18)`, borderRadius:22, padding:'18px 18px', border:`1px solid ${c.rank1}30`, marginBottom:14, position:'relative', overflow:'hidden' }}>
+          <div style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:c.subText, marginBottom:6 }}>Locul tău luna aceasta</div>
+          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            <div style={{ fontSize:44, lineHeight:1 }}>🏆</div>
+            <div>
+              <div style={{ fontSize:32, fontWeight:900, color:c.text, lineHeight:1 }}>#1</div>
+              <div style={{ fontSize:11, fontWeight:700, color:c.subText, marginTop:3 }}>din 12 fotografi</div>
+            </div>
+            <div style={{ flex:1, textAlign:'right' }}>
+              <div style={{ fontSize:22, fontWeight:900, color:c.text, letterSpacing:'-0.5px' }}>2.840</div>
+              <div style={{ fontSize:10, fontWeight:700, color:c.subText }}>RON luna aceasta</div>
+            </div>
+          </div>
+          {/* Target progress */}
+          <div style={{ marginTop:14 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+              <span style={{ fontSize:10, fontWeight:800, color:c.subText, textTransform:'uppercase', letterSpacing:'0.6px' }}>Target: {target.toLocaleString('ro')} RON</span>
+              <span style={{ fontSize:10, fontWeight:900, color:c.success }}>{Math.round(myTotal/target*100)}%</span>
+            </div>
+            <div style={{ height:8, borderRadius:999, background:`${c.text}15`, overflow:'hidden' }}>
+              <div style={{ height:'100%', borderRadius:999, width:`${Math.min(myTotal/target*100,100)}%`, background:`linear-gradient(to right,${c.success},${c.accentSecondary})` }}/>
+            </div>
+            <div style={{ fontSize:10, fontWeight:700, color:c.subText, marginTop:4 }}>Mai ai {(target-myTotal).toLocaleString('ro')} RON până la target</div>
+          </div>
+        </div>
+        {/* Leaderboard */}
+        <SectionLabel theme={theme}>Clasament Iulie 2025</SectionLabel>
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {leaderboard.map((entry,i)=>{
+            const isMe = i===0;
+            const rankColor = i<3 ? rankColors[i] : c.textSecondary;
+            return (
+              <div key={i} style={{ background: isMe?`${c.rank1}12`:c.card, borderRadius:14, padding:'12px 14px', border:`1px solid ${isMe?`${c.rank1}30`:c.border}`, display:'flex', alignItems:'center', gap:10, boxShadow:theme.softShadow }}>
+                <div style={{ width:32, height:32, borderRadius:10, background:`${rankColor}20`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:i<3?15:12, fontWeight:900, color:rankColor, flexShrink:0 }}>
+                  {i<3?rankIcons[i]:`#${i+1}`}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:isMe?900:700, color:c.text }}>{entry.name}{isMe?' (tu)':''}</div>
+                  <div style={{ fontSize:10, color:c.subText, fontWeight:700, marginTop:2 }}>{entry.mag} magneți</div>
+                </div>
+                <div style={{ fontSize:i<3?15:13, fontWeight:900, color:rankColor }}>{entry.total.toLocaleString('ro')} RON</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <TabBar theme={theme} active="home" onNav={onNav}/>
+    </div>
+  );
+}
+
+// ─── PROFILE SCREEN ───────────────────────────────────────────
+function ProfilScreen({ theme, onNav }) {
+  const c = theme.colors;
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <div style={{ flex:1, overflowY:'auto', padding:'0 20px 16px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:4, marginBottom:16 }}>
+          <div style={{ fontSize:20, fontWeight:900, color:c.text }}>Profilul Meu</div>
+          <button onClick={()=>onNav('toggle-theme')} style={{ width:36, height:36, borderRadius:10, border:`1px solid ${c.border}`, background:c.surface, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            {theme.isDark?<IcoSun c={c.text} s={16}/>:<IcoMoon c={c.text} s={16}/>}
+          </button>
+        </div>
+        {/* Avatar + name */}
+        <div style={{ background:c.card, borderRadius:22, padding:20, border:`1px solid ${c.border}`, boxShadow:theme.shadow, marginBottom:14, display:'flex', alignItems:'center', gap:16 }}>
+          <div style={{ width:72, height:72, borderRadius:22, background:`linear-gradient(135deg,${c.brand},${c.accentSecondary})`, padding:3, flexShrink:0 }}>
+            <img src="../../assets/img_avatar.png" style={{ width:'100%', height:'100%', borderRadius:19, objectFit:'cover' }} alt=""/>
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:18, fontWeight:900, color:c.text }}>Alexandru Popescu</div>
+            <div style={{ fontSize:12, color:c.subText, fontWeight:600, marginTop:3 }}>fotograf@magneto.ro</div>
+            <div style={{ marginTop:8 }}><StatusBadge label="📷 Fotograf" variant="info" size="sm"/></div>
+          </div>
+        </div>
+        {/* Stats */}
+        <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+          {[{l:'Magneți Luna',v:'680',col:c.brand},{l:'Încasări Luna',v:'13.600',col:c.success},{l:'Rank',v:'#1',col:c.gold}].map((s,i)=>(
+            <div key={i} style={{ flex:1, background:c.card, borderRadius:14, padding:'12px 8px', border:`1px solid ${c.border}`, display:'flex', flexDirection:'column', alignItems:'center', gap:3, boxShadow:theme.softShadow }}>
+              <div style={{ fontSize:17, fontWeight:900, color:s.col }}>{s.v}</div>
+              <div style={{ fontSize:9, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.6px', color:c.subText, textAlign:'center' }}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+        {/* Settings rows */}
+        <SectionLabel theme={theme}>Cont</SectionLabel>
+        <div style={{ background:c.card, borderRadius:16, border:`1px solid ${c.border}`, boxShadow:theme.softShadow, overflow:'hidden', marginBottom:14 }}>
+          {[
+            { label:'Editează Profil', icon:<IcoUser c={c.brand} s={18}/>, col:c.brand },
+            { label:'Notificări', icon:<IcoBell c={c.warning} s={18}/>, col:c.warning },
+            { label:'Setări Aplicație', icon:<IcoSettings c={c.textSecondary} s={18}/>, col:c.textSecondary },
+          ].map((row,i,arr)=>(
+            <button key={i} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background:'none', border:'none', borderBottom:i<arr.length-1?`1px solid ${c.separator}`:'none', cursor:'pointer', textAlign:'left' }}>
+              <div style={{ width:36, height:36, borderRadius:10, background:`${row.col}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{row.icon}</div>
+              <span style={{ flex:1, fontSize:13, fontWeight:700, color:c.text }}>{row.label}</span>
+              <IcoChevron c={c.subText} s={14}/>
+            </button>
+          ))}
+        </div>
+        {/* Dark mode toggle prominent */}
+        <div style={{ background:c.card, borderRadius:16, border:`1px solid ${c.border}`, boxShadow:theme.softShadow, overflow:'hidden', marginBottom:14 }}>
+          <button onClick={()=>onNav('toggle-theme')} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background:'none', border:'none', cursor:'pointer' }}>
+            <div style={{ width:36, height:36, borderRadius:10, background:`${c.brand}18`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              {theme.isDark?<IcoSun c={c.brand} s={18}/>:<IcoMoon c={c.brand} s={18}/>}
+            </div>
+            <span style={{ flex:1, fontSize:13, fontWeight:700, color:c.text }}>Mod {theme.isDark?'Luminos':'Întunecat'}</span>
+            {/* Toggle switch */}
+            <div style={{ width:44, height:24, borderRadius:12, background:theme.isDark?c.brand:c.progressTrack, position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+              <div style={{ width:20, height:20, borderRadius:10, background:'#fff', position:'absolute', top:2, left:theme.isDark?22:2, transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+            </div>
+          </button>
+        </div>
+        <AppButton variant="danger" label="Deconectare" icon={<IcoPower c="#B91C1C" s={17}/>} fullWidth onPress={()=>onNav('logout')}/>
+      </div>
+      <TabBar theme={theme} active="profil" onNav={onNav}/>
+    </div>
+  );
+}
+
+// ─── ADMIN DASHBOARD ─────────────────────────────────────────
+function AdminDashboard({ theme, onNav }) {
+  const c = theme.colors;
+  const leaderboard = [
+    { name:'Alexandru P.', total:2840, rank:1 },
+    { name:'Maria S.',     total:2310, rank:2 },
+    { name:'Ionuț D.',     total:1950, rank:3 },
+  ];
+  const rankColors = [c.rank1,c.rank2,c.rank3];
+  const rankIcons = ['🏆','🥈','🥉'];
+  return (
+    <div style={{ flex:1, overflowY:'auto', padding:'0 16px 100px' }}>
+      {/* Hero header */}
+      <div style={{ background:theme.isDark?c.panel:c.card, borderRadius:26, padding:20, border:`1px solid ${theme.isDark?c.borderStrong:'#E3E7F3'}`, boxShadow:theme.shadow, position:'relative', overflow:'hidden', marginBottom:14 }}>
+        <div style={{ position:'absolute', inset:0, background:`linear-gradient(135deg,${c.brand}0A,transparent)`, pointerEvents:'none' }}/>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:5, background:`${c.brand}18`, borderRadius:999, padding:'3px 8px' }}>
+            <IcoShield c={c.brand} s={11}/>
+            <span style={{ fontSize:10, fontWeight:800, color:c.brand }}>Admin</span>
+          </div>
+          <div style={{ display:'flex', background:`${c.surface}99`, borderRadius:12, border:`1px solid ${c.border}`, overflow:'hidden' }}>
+            <button onClick={()=>onNav('toggle-theme')} style={{ width:36, height:36, background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {theme.isDark?<IcoSun c={c.text} s={15}/>:<IcoMoon c={c.text} s={15}/>}
+            </button>
+            <div style={{ width:1, background:c.border }}/>
+            <button onClick={()=>onNav('logout')} style={{ width:36, height:36, background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <IcoPower c={c.danger} s={15}/>
+            </button>
+          </div>
+        </div>
+        <div style={{ display:'flex', alignItems:'flex-start', gap:14 }}>
+          <div style={{ flexShrink:0, width:60, height:60, borderRadius:18, background:`linear-gradient(135deg,${c.brand},${c.accentSecondary})`, padding:3 }}>
+            <div style={{ width:'100%', height:'100%', borderRadius:15, background:c.card, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <span style={{ fontSize:20, fontWeight:900, color:c.brand }}>AP</span>
+            </div>
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:11, color:c.subText, fontWeight:700 }}>Bună dimineața,</div>
+            <div style={{ fontSize:22, fontWeight:900, color:c.text, lineHeight:1.1, marginTop:2 }}>Alexandru</div>
+            <div style={{ fontSize:11, fontStyle:'italic', fontWeight:700, color:c.subText, marginTop:6 }}>"Zi nouă, oportunități noi."</div>
+          </div>
+        </div>
+      </div>
+      {/* KPIs */}
+      <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+        <StatCard title="Încasări Azi" value="1.850" subValue="Cash: 1.200 | Card: 650" color={c.success} iconSvg={<IcoDollar c={c.success} s={19}/>}/>
+        <StatCard title="Activitate" value="3" subValue="5 fotografi teren" color={c.info} iconSvg={<IcoCalendar c={c.info} s={19}/>}/>
+      </div>
+      {/* Leaderboard */}
+      <div style={{ background:c.card, borderRadius:20, padding:14, border:`1px solid ${c.border}`, boxShadow:theme.softShadow, marginBottom:14 }}>
+        <SectionLabel theme={theme}>Top Fotografi Azi</SectionLabel>
+        {leaderboard.map((entry,i)=>(
+          <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 10px', borderRadius:12, background:i===0?`${rankColors[0]}10`:'transparent', marginBottom:i<2?3:0 }}>
+            <div style={{ width:30, height:30, borderRadius:9, background:`${rankColors[i]}18`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13 }}>{rankIcons[i]}</div>
+            <div style={{ flex:1, fontSize:i===0?13:12, fontWeight:i===0?900:700, color:c.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{entry.name}</div>
+            <div style={{ fontSize:i===0?14:12, fontWeight:900, color:rankColors[i] }}>{entry.total.toLocaleString('ro')} RON</div>
+          </div>
+        ))}
+      </div>
+      {/* Actions */}
+      <div style={{ background:c.card, borderRadius:20, padding:14, border:`1px solid ${c.border}`, boxShadow:theme.softShadow, marginBottom:14 }}>
+        <SectionLabel theme={theme}>Acțiuni Directe</SectionLabel>
+        <div style={{ display:'flex', gap:8 }}>
+          <QuickActionTile label="Încasare" color={c.success} iconSvg={<IcoDollar c={c.success} s={21}/>}/>
+          <QuickActionTile label="Consum Stoc" color={c.warning} iconSvg={<IcoBox c={c.warning} s={21}/>}/>
+        </div>
+      </div>
+      <div style={{ background:c.card, borderRadius:20, padding:14, border:`1px solid ${c.border}`, boxShadow:theme.softShadow }}>
+        <SectionLabel theme={theme}>Acțiuni Rapide</SectionLabel>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+          {[{l:'Top & Target',col:c.rank1,ico:<IcoTrophy c={c.rank1} s={20}/>},{l:'Stocuri',col:c.brand,ico:<IcoBox c={c.brand} s={20}/>},{l:'Programare',col:c.warning,ico:<IcoUsers c={c.warning} s={20}/>},{l:'Salarii',col:c.success,ico:<IcoDollar c={c.success} s={20}/>},{l:'Echipă',col:c.danger,ico:<IcoUsers c={c.danger} s={20}/>}].map((item,i)=>(
+            <QuickActionTile key={i} label={item.l} color={item.col} iconSvg={item.ico}/>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ROOT APP ─────────────────────────────────────────────────
+function AppShell() {
+  const { theme, toggleTheme } = useTheme();
+  const [screen, setScreen] = React.useState('login');
+  const [role, setRole] = React.useState(null);
+
+  const handleLogin = (r) => { setRole(r); setScreen(r==='admin'?'admin':'home'); };
+  const handleNav = (action) => {
+    if (action==='toggle-theme') { toggleTheme(); return; }
+    if (action==='logout') { setScreen('login'); setRole(null); return; }
+    setScreen(action);
+  };
+
+  const screens = role==='admin'
+    ? ['admin']
+    : ['home','events','incasari','gamification','profil'];
+
+  const screenLabels = {
+    login:'Login', home:'Home', events:'Events', incasari:'Încasări',
+    gamification:'Top & Target', profil:'Profil', admin:'Admin'
+  };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:24 }}>
+      {/* Top controls */}
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <img src="../../assets/logo_magneto.png" style={{ width:32, height:32, objectFit:'contain', background:'#fff', borderRadius:16 }} alt=""/>
+          <span style={{ fontSize:18, fontWeight:900, background:'linear-gradient(to right,#34CAE8,#6366F1)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>MagnetoApp</span>
+        </div>
+        {/* Screen switcher */}
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6, justifyContent:'center', maxWidth:420 }}>
+          <button onClick={()=>{setScreen('login');setRole(null);}} style={{ padding:'5px 12px', borderRadius:999, border:'1px solid rgba(255,255,255,0.15)', background:screen==='login'?'#6366F1':'rgba(255,255,255,0.06)', color:'#fff', cursor:'pointer', fontSize:11, fontWeight:700 }}>Login</button>
+          {['home','events','incasari','gamification','profil'].map(s=>(
+            <button key={s} onClick={()=>{setRole('photographer');setScreen(s);}} style={{ padding:'5px 12px', borderRadius:999, border:'1px solid rgba(255,255,255,0.15)', background:screen===s?'#6366F1':'rgba(255,255,255,0.06)', color:'#fff', cursor:'pointer', fontSize:11, fontWeight:700 }}>
+              📷 {screenLabels[s]}
+            </button>
+          ))}
+          <button onClick={()=>handleLogin('admin')} style={{ padding:'5px 12px', borderRadius:999, border:'1px solid rgba(255,255,255,0.15)', background:screen==='admin'?'#6366F1':'rgba(255,255,255,0.06)', color:'#fff', cursor:'pointer', fontSize:11, fontWeight:700 }}>🛡️ Admin</button>
+        </div>
+        {/* Dark mode toggle */}
+        <button onClick={()=>handleNav('toggle-theme')} style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 16px', borderRadius:999, border:'1px solid rgba(255,255,255,0.15)', background:'rgba(255,255,255,0.06)', color:'#fff', cursor:'pointer', fontSize:12, fontWeight:700 }}>
+          {theme.isDark?<IcoSun c="#fff" s={14}/>:<IcoMoon c="#fff" s={14}/>}
+          {theme.isDark?'Mod luminos':'Mod întunecat'}
+        </button>
+      </div>
+
+      {/* Phone frame */}
+      <Phone theme={theme}>
+        {screen==='login' && <LoginScreen theme={theme} onLogin={handleLogin}/>}
+        {screen==='home' && <PhotographerHome theme={theme} onNav={handleNav}/>}
+        {screen==='events' && <EventsScreen theme={theme} onNav={handleNav}/>}
+        {screen==='incasari' && <IncasariScreen theme={theme} onNav={handleNav}/>}
+        {screen==='gamification' && <GamificationScreen theme={theme} onNav={handleNav}/>}
+        {screen==='profil' && <ProfilScreen theme={theme} onNav={handleNav}/>}
+        {screen==='admin' && <AdminDashboard theme={theme} onNav={handleNav}/>}
+      </Phone>
+
+      <p style={{ color:'rgba(255,255,255,0.25)', fontSize:10, fontWeight:700 }}>MagnetoApp UI Kit — Design System 2025</p>
+    </div>
+  );
+}
+
+function App() {
+  return <ThemeProvider><AppShell/></ThemeProvider>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

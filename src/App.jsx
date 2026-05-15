@@ -4,6 +4,7 @@ import Contract from "./FluxContract/Contract";
 import Anexa from "./FluxContract/Anexa";
 import {
   addDays,
+  addMonths,
   bankFromIban,
   exportJSON,
   fetchAnaf,
@@ -15,6 +16,7 @@ import {
   importJSON,
   isValidDmy,
   normalizeDate,
+  parseDmy,
   listClientHistory,
   saveLocation,
   searchRoLocations,
@@ -25,7 +27,7 @@ import {
   validateCUI,
   validateIBAN,
 } from "./shared/utils";
-import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, getContract, deleteContract } from "./shared/db";
+import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel } from "./shared/db";
 import { extractFromDocx } from "./Sistem/importDocx";
 import { db } from "./shared/firebase";
 import { doc, setDoc, deleteDoc, getDocs, getDoc, query, where, collection, serverTimestamp } from "firebase/firestore";
@@ -33,13 +35,14 @@ import Biblioteca from "./Biblioteca/Biblioteca";
 import Dashboard from "./Dashboard/Dashboard";
 import Rapoarte from "./Rapoarte/Rapoarte";
 import HubPage from "./shared/HubPage";
+import { useDialog } from "./shared/Dialog";
 
 /* ---------- empty factories (neschimbate) ---------- */
 const emptyClient = () => ({
   tipContract: "cadru",
   numarContract: "",
   dataContract: todayDmy(),
-  dataExpirare: "",
+  dataExpirare: addMonths(todayDmy(), 12),
   numeBeneficiar: "",
   sediu: "",
   cui: "",
@@ -106,9 +109,12 @@ const fmt = (n) =>
   new Intl.NumberFormat("ro-RO").format(Number(n) || 0);
 
 function App() {
+  const { alert, confirm, prompt } = useDialog();
   const stored = loadLocal();
   const [step, setStep] = useState("dashboard");
   const [showPreview, setShowPreview] = useState(false);
+  const [blankPreview, setBlankPreview] = useState(false);
+  const [blankData, setBlankData] = useState(null);
   const [printSelection, setPrintSelection] = useState("all");
   const [clientData, setClientData] = useState(stored?.clientData || emptyClient());
   const [anexe, setAnexe] = useState(stored?.anexe || [emptyAnexa()]);
@@ -147,24 +153,25 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSetStartNumber = () => {
+  const handleSetStartNumber = async () => {
     const next = peekNextContractNumber();
-    const raw = prompt(
+    const raw = await prompt(
       `Introdu numărul de la care să continue numerotarea automată.\n` +
         `Următorul nr. ar fi: ${next}.\n` +
         `Ex.: dacă ai emis deja până la 42, introdu 43.`,
-      String(next)
+      String(next),
+      { title: "Setează numerotarea" }
     );
     if (raw == null) return;
     const v = parseInt(raw, 10);
     if (!Number.isFinite(v) || v < 1) {
-      alert("Număr invalid.");
+      await alert("Număr invalid.", { variant: "danger" });
       return;
     }
     const start = setContractCounterStart(v);
     const n = getNextContractNumber();
     setClientData((prev) => ({ ...prev, numarContract: n }));
-    alert(`Numerotarea va continua de la ${start}.`);
+    await alert(`Numerotarea va continua de la ${start}.`, { variant: "success" });
   };
 
   /* ---------- Actions ---------- */
@@ -189,13 +196,13 @@ function App() {
     }
 
     if (localOk && cloudOk) {
-      alert("Contract salvat local și în Firestore.");
+      await alert("Contract salvat local și în Firestore.", { variant: "success" });
     } else if (localOk) {
-      alert("Salvat local, dar a eșuat în cloud.\n" + errs.join("\n"));
+      await alert("Salvat local, dar a eșuat în cloud.\n" + errs.join("\n"), { variant: "warning" });
     } else if (cloudOk) {
-      alert("Salvat în cloud, dar a eșuat local.\n" + errs.join("\n"));
+      await alert("Salvat în cloud, dar a eșuat local.\n" + errs.join("\n"), { variant: "warning" });
     } else {
-      alert("Eroare la salvare:\n" + errs.join("\n"));
+      await alert("Eroare la salvare:\n" + errs.join("\n"), { variant: "danger" });
     }
 
     if (localOk || cloudOk) {
@@ -210,7 +217,7 @@ function App() {
     try {
       const snap = await getDoc(doc(db, "users", nr));
       if (!snap.exists()) {
-        alert("Contractul nu a fost găsit în Firestore.");
+        await alert("Contractul nu a fost găsit în Firestore.", { variant: "warning" });
         return;
       }
       const cd = snap.data();
@@ -242,7 +249,7 @@ function App() {
       setStep("client");
     } catch (e) {
       console.error(e);
-      alert("Eroare la deschidere: " + e.message);
+      await alert("Eroare la deschidere: " + e.message, { variant: "danger" });
     }
   };
 
@@ -256,13 +263,13 @@ function App() {
       if (Array.isArray(data.anexe)) setAnexe(data.anexe.length ? data.anexe : [emptyAnexa()]);
       setCurrentContractId(null);
     } catch {
-      alert("Fișier invalid.");
+      await alert("Fișier invalid.", { variant: "danger" });
     }
     e.target.value = "";
   };
 
-  const handleNewContract = () => {
-    if (!confirm("Începi un contract nou? Datele curente vor fi golite.")) return;
+  const handleNewContract = async () => {
+    if (!(await confirm("Începi un contract nou? Datele curente vor fi golite."))) return;
     const n = getNextContractNumber();
     setClientData({ ...emptyClient(), numarContract: n });
     setAnexe([emptyAnexa()]);
@@ -279,18 +286,70 @@ function App() {
       setCurrentContractId(null);
       setStep("client");
       if (missing.length) {
-        alert(
+        await alert(
           "Import .docx OK. Câmpuri NEdetectate (completează manual): " +
-            missing.join(", ")
+            missing.join(", "),
+          { variant: "warning" }
         );
       } else {
-        alert("Import .docx OK. Verifică datele în formular înainte de salvare.");
+        await alert("Import .docx OK. Verifică datele în formular înainte de salvare.", { variant: "success" });
       }
     } catch (err) {
       console.error(err);
-      alert("Eroare la citirea .docx: " + err.message);
+      await alert("Eroare la citirea .docx: " + err.message, { variant: "danger" });
     }
     e.target.value = "";
+  };
+
+  const handleShowBlankTemplate = () => {
+    if (!blankData) setBlankData({ client: emptyClient(), anexe: [emptyAnexa()] });
+    setBlankPreview(true);
+    setPrintSelection("all");
+    setShowPreview(true);
+  };
+
+  const handleSaveAsModel = async () => {
+    const clauze = blankData?.client?.clauzeCustom || {};
+    const associate = await confirm(
+      "Asociezi acest model cu un client anume? Anulează = salvează ca „Model generic” (fără client).",
+      { confirmLabel: "Asociez cu client", cancelLabel: "Model generic" }
+    );
+
+    let cui = "";
+    let numeBeneficiar = "Model generic";
+
+    if (associate) {
+      const history = listClientHistory();
+      const options = history.map((c) => `${c.numeBeneficiar} — ${c.cui}`).join("\n");
+      const input = await prompt(
+        `Introdu CUI sau alege din istoric:\n\n${options || "(istoric gol)"}`,
+        { defaultValue: "", placeholder: "CUI" }
+      );
+      if (!input) return;
+      const raw = input.replace(/^RO/i, "").trim();
+      const client = history.find((c) => (c.cui || "").replace(/^RO/i, "").trim() === raw);
+      cui = client?.cui || (raw ? `RO${raw}` : "");
+      numeBeneficiar = client?.numeBeneficiar || "";
+      if (!numeBeneficiar) {
+        const ok = await confirm(`CUI ${raw} nu apare în istoric. Salvez modelul oricum (fără denumire beneficiar)?`, { confirmLabel: "Salvează" });
+        if (!ok) return;
+      }
+    }
+
+    const defaultEvent = blankData?.anexe?.[0]?.eventData || {};
+    const defaultBudget = blankData?.anexe?.[0]?.budgetData || {};
+    const res = await saveModel({
+      cui,
+      numeBeneficiar,
+      clauzeCustom: clauze,
+      defaultEvent,
+      defaultBudget,
+    });
+    if (res.duplicate) {
+      await alert("Există deja un model identic salvat — nu îl resalvez.", { variant: "warning" });
+    } else {
+      await alert(`Model salvat${numeBeneficiar && numeBeneficiar !== "Model generic" ? ` pentru ${numeBeneficiar}` : " (generic)"}. Îl găsești în Bibliotecă → Modele.`, { variant: "success" });
+    }
   };
 
   const handleExportBackup = async () => {
@@ -303,9 +362,9 @@ function App() {
     try {
       const data = await importJSON(file);
       const n = await importAll(data);
-      alert(`${n} contracte importate.`);
+      await alert(`${n} contracte importate.`, { variant: "success" });
     } catch {
-      alert("Backup invalid.");
+      await alert("Backup invalid.", { variant: "danger" });
     }
     e.target.value = "";
   };
@@ -348,6 +407,31 @@ function App() {
     } catch (e) {
       console.warn("ANAF:", e.message);
     }
+    try {
+      const modele = await getModeleByCui(clientData.cui);
+      if (modele && modele.length > 0) {
+        const m = modele[0];
+        const ok = await confirm(
+          `Există ${modele.length} model${modele.length > 1 ? "e" : ""} salvat pentru acest client (ultimul: ${m.updatedAt?.slice(0, 10) || "—"}). Pornești de la el (clauze + valori implicite)?`,
+          { confirmLabel: "Folosește modelul" }
+        );
+        if (ok) {
+          setClientData((prev) => ({ ...prev, clauzeCustom: m.clauzeCustom || {} }));
+          setAnexe((prev) => {
+            const next = [...prev];
+            if (next[0]) {
+              next[0] = {
+                eventData: { ...next[0].eventData, ...(m.defaultEvent || {}) },
+                budgetData: { ...next[0].budgetData, ...(m.defaultBudget || {}) },
+              };
+            }
+            return next;
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Modele:", e.message);
+    }
   };
 
   const generateContractNumber = () => {
@@ -355,13 +439,71 @@ function App() {
     setClientData((prev) => ({ ...prev, numarContract: n }));
   };
 
-  const sendEmail = () => {
+  const generateContractPdfBlob = async () => {
+    const source = document.querySelector(".preview-container");
+    if (!source) throw new Error("Previzualizarea contractului nu este disponibilă.");
+    const [{ default: html2canvas }, jsPDFmod] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
+    const jsPDF = jsPDFmod.jsPDF || jsPDFmod.default;
+    const pages = Array.from(source.querySelectorAll(".document-page"));
+    if (pages.length === 0) throw new Error("Nu există pagini de exportat.");
+
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+
+    for (let i = 0; i < pages.length; i++) {
+      const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+      const img = canvas.toDataURL("image/jpeg", 0.92);
+      const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
+      const w = canvas.width * ratio;
+      const h = canvas.height * ratio;
+      if (i > 0) pdf.addPage();
+      pdf.addImage(img, "JPEG", (pageW - w) / 2, 0, w, h, undefined, "FAST");
+    }
+    return pdf.output("blob");
+  };
+
+  const sendEmail = async () => {
     const subject = `Contract nr. ${clientData.numarContract || ""} - ALUMA S.R.L.`;
     const body = `Bună ziua,\n\nVă transmitem contractul nr. ${clientData.numarContract || ""}${clientData.dataContract ? ` din ${clientData.dataContract}` : ""} împreună cu anexele aferente.\n\nVă mulțumim.\n\nCu stimă,\nALUMA S.R.L.`;
-    const url = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    const to = clientData.email || "";
+    const fileName = `Contract_${(clientData.numarContract || "fara-numar").toString().replace(/[^\w.-]+/g, "_")}.pdf`;
+
+    let blob;
+    try {
+      blob = await generateContractPdfBlob();
+    } catch (e) {
+      await alert("Nu am putut genera PDF-ul: " + (e?.message || e), { variant: "danger" });
+      return;
+    }
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const file = new File([blob], fileName, { type: "application/pdf" });
+
+    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: subject, text: body });
+        return;
+      } catch (e) {
+        if (e?.name === "AbortError") return;
+      }
+    }
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
+
+    const url = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
     setTimeout(() => {
-      alert("Gmail s-a deschis într-un tab nou. Salvează PDF-ul din butonul Printează / PDF și atașează-l manual.");
+      alert(`PDF-ul "${fileName}" a fost descărcat. Atașează-l (drag & drop) în clientul de email care s-a deschis.`, { title: "Email pregătit", variant: "success" });
     }, 300);
   };
 
@@ -517,7 +659,7 @@ function App() {
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Export Word:", e);
-      alert("Eroare la exportul Word: " + (e?.message || e));
+      await alert("Eroare la exportul Word: " + (e?.message || e), { variant: "danger" });
     }
   };
 
@@ -529,10 +671,18 @@ function App() {
     );
   };
   const addAnexa = () => {
+    if (clientData.tipContract === "unic" && anexe.length >= 1) {
+      alert("Contractul „Eveniment unic” permite o singură anexă. Schimbă tipul în „Cadru” pentru anexe multiple.");
+      return;
+    }
     setAnexe((prev) => [...prev, emptyAnexa()]);
     setStep(`anexa-${anexe.length}`);
   };
   const duplicateAnexa = (idx) => {
+    if (clientData.tipContract === "unic" && anexe.length >= 1) {
+      alert("Contractul „Eveniment unic” permite o singură anexă. Schimbă tipul în „Cadru” pentru anexe multiple.");
+      return;
+    }
     setAnexe((prev) => [
       ...prev,
       { eventData: { ...prev[idx].eventData }, budgetData: { ...prev[idx].budgetData } },
@@ -543,8 +693,8 @@ function App() {
     setAnexe((prev) => prev.filter((_, i) => i !== idx));
     setStep("client");
   };
-  const resetAll = () => {
-    if (!confirm("Ștergi toate datele?")) return;
+  const resetAll = async () => {
+    if (!(await confirm("Ștergi toate datele?", { variant: "danger", confirmLabel: "Șterge" }))) return;
     setClientData(emptyClient());
     setAnexe([emptyAnexa()]);
     setStep("client");
@@ -556,6 +706,15 @@ function App() {
     if (!clientData.numeBeneficiar) errs.push("Nume Beneficiar lipsă.");
     if (!clientData.reprezentant) errs.push("Reprezentant Legal lipsă.");
     if (!isValidDmy(clientData.dataContract)) errs.push("Data contractului trebuie zz-ll-aaaa.");
+    if (clientData.tipContract === "cadru") {
+      if (!isValidDmy(clientData.dataExpirare)) errs.push("Contract cadru: data de expirare este obligatorie (zz-ll-aaaa).");
+      else if (clientData.dataExpirare && clientData.dataContract && parseDmy(clientData.dataExpirare) <= parseDmy(clientData.dataContract)) {
+        errs.push("Data expirării trebuie să fie ulterioară datei contractului.");
+      }
+    }
+    if (clientData.tipContract === "unic" && anexe.length > 1) {
+      errs.push("Contract „Eveniment unic”: este permisă o singură anexă.");
+    }
     if (clientData.cui && !validateCUI(clientData.cui)) errs.push("CUI/CNP are format invalid.");
     if (clientData.iban && !validateIBAN(clientData.iban)) errs.push("IBAN are format invalid.");
     anexe.forEach((a, i) => {
@@ -574,7 +733,7 @@ function App() {
     if (!nr) {
       const msg = "Contractul nu are număr. Generează un număr înainte de salvare.";
       if (silent) throw new Error(msg);
-      alert(msg);
+      await alert(msg, { variant: "warning" });
       return;
     }
     try {
@@ -616,11 +775,11 @@ function App() {
         }, { merge: true });
       }
 
-      if (!silent) alert("Datele au fost salvate cu succes în Firestore.");
+      if (!silent) await alert("Datele au fost salvate cu succes în Firestore.", { variant: "success" });
     } catch (e) {
       console.error("Firestore:", e);
       if (silent) throw e;
-      alert("Eroare la salvarea în Firestore: " + e.message);
+      await alert("Eroare la salvarea în Firestore: " + e.message, { variant: "danger" });
     }
   };
 
@@ -671,20 +830,34 @@ function App() {
      PREVIEW MODE
      ==================================================================== */
   if (showPreview) {
+    const previewClient = blankPreview ? (blankData?.client || emptyClient()) : clientData;
+    const previewAnexe = blankPreview ? (blankData?.anexe || [emptyAnexa()]) : anexe;
+    const setPreviewClauze = (cc) => {
+      if (blankPreview) {
+        setBlankData((prev) => ({ ...prev, client: { ...prev.client, clauzeCustom: cc } }));
+      } else {
+        setClientData((p) => ({ ...p, clauzeCustom: cc }));
+      }
+    };
     const showContract = printSelection === "all" || printSelection === "contract";
     const visibleAnexe =
       printSelection === "all"
-        ? anexe.map((a, i) => ({ ...a, idx: i }))
+        ? previewAnexe.map((a, i) => ({ ...a, idx: i }))
         : typeof printSelection === "number"
-          ? [{ ...anexe[printSelection], idx: printSelection }]
+          ? [{ ...previewAnexe[printSelection], idx: printSelection }]
           : [];
 
     return (
       <div className="preview-container">
         <div className="no-print print-controls">
-          <button className="back-btn" onClick={() => setShowPreview(false)}>
+          <button className="back-btn" onClick={() => { setShowPreview(false); setBlankPreview(false); }}>
             ← Înapoi la editare
           </button>
+          {blankPreview && (
+            <span style={{ alignSelf: "center", padding: "4px 10px", background: "#FEF3C7", color: "#92400E", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
+              MODEL BLANK · pentru pre-acord client
+            </span>
+          )}
           <select
             value={printSelection}
             onChange={(e) => {
@@ -694,11 +867,11 @@ function App() {
           >
             <option value="all">Contract + toate anexele</option>
             <option value="contract">Doar contract</option>
-            {anexe.map((_, i) => (
+            {previewAnexe.map((_, i) => (
               <option key={i} value={i}>Doar Anexa nr. {i + 1}</option>
             ))}
           </select>
-          {printSelection === "all" && anexe.length > 1 && (
+          {!blankPreview && printSelection === "all" && anexe.length > 1 && (
             <span style={{ alignSelf: "center", fontFamily: "Instrument Serif, serif", fontSize: 18 }}>
               Total general: {fmt(totalGeneral)} LEI
             </span>
@@ -709,6 +882,11 @@ function App() {
             </button>
             <button className="back-btn" onClick={exportDocx}>Export Word</button>
             <button className="back-btn" onClick={sendEmail}>Trimite email</button>
+            {blankPreview && (
+              <button className="back-btn" onClick={handleSaveAsModel} title="Salvează acest model editat pentru un client">
+                💾 Salvează ca model
+              </button>
+            )}
             <button className="print-btn" onClick={() => window.print()}>Printează / PDF</button>
           </div>
         </div>
@@ -721,16 +899,16 @@ function App() {
 
         {showContract && (
           <Contract
-            clientData={clientData}
+            clientData={previewClient}
             editMode={editMode}
-            onClauzeChange={(cc) => setClientData((p) => ({ ...p, clauzeCustom: cc }))}
+            onClauzeChange={setPreviewClauze}
           />
         )}
         {visibleAnexe.map((a) => (
           <Anexa
             key={a.idx}
             anexaNumber={a.idx + 1}
-            clientData={clientData}
+            clientData={previewClient}
             eventData={{
               ...a.eventData,
               dataPredare: calcDataPredare(a.eventData.dataEveniment, a.eventData.zilePredare),
@@ -739,7 +917,7 @@ function App() {
             budgetData={a.budgetData}
             calculeazaTotal={() => sumBudget(a.budgetData)}
             editMode={editMode}
-            onClauzeChange={(cc) => setClientData((p) => ({ ...p, clauzeCustom: cc }))}
+            onClauzeChange={setPreviewClauze}
           />
         ))}
       </div>
@@ -802,12 +980,12 @@ function App() {
   const isClient = step === "client";
   const isDashboard = step === "dashboard";
   const isRapoarte = step === "rapoarte";
-  const isSaved = step === "salvate" || step === "biblioteca-contracte" || step === "biblioteca-clienti";
+  const isSaved = step === "salvate" || step === "biblioteca-contracte" || step === "biblioteca-clienti" || step === "biblioteca-modele";
   const isHubFlux = step === "hub-flux";
   const isHubBiblioteca = step === "hub-biblioteca";
   const isHubSistem = step === "hub-sistem";
   const isHub = isHubFlux || isHubBiblioteca || isHubSistem;
-  const bibliotecaTab = step === "biblioteca-clienti" ? "clienti" : "contracte";
+  const bibliotecaTab = step === "biblioteca-clienti" ? "clienti" : step === "biblioteca-modele" ? "modele" : "contracte";
 
   const refreshDrafturi = async () => {
     try { setDrafturi(await listDrafturi()); } catch { setDrafturi([]); }
@@ -816,34 +994,34 @@ function App() {
   const handleOpenDraft = async (id) => {
     try {
       const rec = await getContract(id);
-      if (!rec) { alert("Draft inexistent."); return; }
+      if (!rec) { await alert("Draft inexistent.", { variant: "warning" }); return; }
       setClientData({ ...emptyClient(), ...(rec.clientData || {}) });
       setAnexe(Array.isArray(rec.anexe) && rec.anexe.length ? rec.anexe : [emptyAnexa()]);
       setCurrentContractId(rec.id);
       setStep("client");
     } catch (e) {
-      alert("Eroare la deschidere draft: " + e.message);
+      await alert("Eroare la deschidere draft: " + e.message, { variant: "danger" });
     }
   };
   const handleDeleteDraft = async (id) => {
-    if (!confirm("Ștergi acest draft definitiv?")) return;
+    if (!(await confirm("Ștergi acest draft definitiv?", { variant: "danger", confirmLabel: "Șterge" }))) return;
     try {
       await deleteContract(id);
       if (currentContractId === id) setCurrentContractId(null);
       await refreshDrafturi();
     } catch (e) {
-      alert("Eroare la ștergere: " + e.message);
+      await alert("Eroare la ștergere: " + e.message, { variant: "danger" });
     }
   };
   const handleMarkTrimis = async () => {
-    if (!currentContractId) { alert("Salvează contractul mai întâi."); return; }
-    if (!confirm("Marchezi contractul ca trimis? Va dispărea din lista de drafturi.")) return;
+    if (!currentContractId) { await alert("Salvează contractul mai întâi.", { variant: "warning" }); return; }
+    if (!(await confirm("Marchezi contractul ca trimis? Va dispărea din lista de drafturi."))) return;
     try {
       await markContractTrimis(currentContractId);
       await refreshDrafturi();
-      alert("Contract marcat ca trimis.");
+      await alert("Contract marcat ca trimis.", { variant: "success" });
     } catch (e) {
-      alert("Eroare: " + e.message);
+      await alert("Eroare: " + e.message, { variant: "danger" });
     }
   };
 
@@ -909,9 +1087,9 @@ function App() {
               type="button"
               className="nav-del"
               title="Șterge anexa"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
-                if (!confirm(`Ștergi Anexa ${i + 1}?`)) return;
+                if (!(await confirm(`Ștergi Anexa ${i + 1}?`, { variant: "danger", confirmLabel: "Șterge" }))) return;
                 setAnexe((prev) => prev.filter((_, j) => j !== i));
                 setStep("client");
               }}
@@ -941,6 +1119,12 @@ function App() {
           onClick={() => setStep("biblioteca-clienti")}
         >
           <span>👥 Clienți</span>
+        </button>
+        <button
+          className={`nav-item ${step === "biblioteca-modele" ? "active" : ""}`}
+          onClick={() => setStep("biblioteca-modele")}
+        >
+          <span>📐 Modele</span>
         </button>
 
         <div
@@ -987,13 +1171,6 @@ function App() {
 
         {/* Topbar */}
         <div className="topbar">
-          <div className="crumbs">
-            <span>Contracte</span>
-            <span className="sep">/</span>
-            <span>{clientData.tipContract === "unic" ? "Eveniment unic" : "Cadru"}</span>
-            <span className="sep">/</span>
-            <strong>{clientData.numarContract ? `Contract #${clientData.numarContract}` : "Contract nou"}</strong>
-          </div>
           <div className="topbar-search">
             <input
               type="text"
@@ -1013,6 +1190,7 @@ function App() {
             onOpenContract={handleOpenFromFirestore}
             onGoLibrary={(t) => setStep(t === "clienti" ? "biblioteca-clienti" : "biblioteca-contracte")}
             onGoReports={() => setStep("rapoarte")}
+            onShowBlankTemplate={handleShowBlankTemplate}
           />
         )}
 
@@ -1134,6 +1312,13 @@ function App() {
                 desc: "Istoricul beneficiarilor",
                 onClick: () => setStep("biblioteca-clienti"),
               },
+              {
+                color: "#0EA5E9",
+                icon: "📐",
+                label: "Modele",
+                desc: "Modele de contract per client",
+                onClick: () => setStep("biblioteca-modele"),
+              },
             ]}
           />
         )}
@@ -1219,12 +1404,26 @@ function App() {
                         <button
                           type="button"
                           className={clientData.tipContract === "cadru" ? "on" : ""}
-                          onClick={() => setClientData({ ...clientData, tipContract: "cadru" })}
+                          onClick={() => setClientData((prev) => ({
+                            ...prev,
+                            tipContract: "cadru",
+                            dataExpirare: prev.dataExpirare || addMonths(prev.dataContract || todayDmy(), 12),
+                          }))}
                         >Cadru · multiple anexe</button>
                         <button
                           type="button"
                           className={clientData.tipContract === "unic" ? "on" : ""}
-                          onClick={() => setClientData({ ...clientData, tipContract: "unic" })}
+                          onClick={async () => {
+                            if (anexe.length > 1) {
+                              const ok = await confirm(
+                                `Tipul „Eveniment unic” permite o singură anexă. Vor fi șterse ${anexe.length - 1} anexe. Continui?`,
+                                { variant: "danger", confirmLabel: "Schimbă tipul" }
+                              );
+                              if (!ok) return;
+                              setAnexe((prev) => prev.slice(0, 1));
+                            }
+                            setClientData((prev) => ({ ...prev, tipContract: "unic", dataExpirare: "" }));
+                          }}
                         >Eveniment unic</button>
                       </div>
                     </div>
@@ -1363,8 +1562,11 @@ function App() {
                     <div className="cell-label">Valabilitate</div>
                     <div className="cell-value">
                       Emitere <strong>{clientData.dataContract || "—"}</strong>
-                      {clientData.dataExpirare && <> · Valabil până la <strong>{clientData.dataExpirare}</strong></>}
-                      {!clientData.dataExpirare && clientData.tipContract === "cadru" && <> · durată nedeterminată</>}
+                      {clientData.tipContract === "unic" ? (
+                        <> · Valabil până la predarea materialelor și încasarea integrală</>
+                      ) : (
+                        clientData.dataExpirare && <> · Valabil până la <strong>{clientData.dataExpirare}</strong></>
+                      )}
                     </div>
                   </div>
                   <button type="button" className="strip-action" onClick={generateContractNumber}>
@@ -1373,18 +1575,29 @@ function App() {
                   <button type="button" className="strip-action" onClick={handleSetStartNumber} title="Setează numărul de pornire pentru numerotarea automată">
                     Start nr.
                   </button>
-                  <div className="strip-action with-date">
-                    <span>📅</span>
-                    <span>Schimbă valabilitate</span>
-                    <input
-                      type="date"
-                      value={(() => {
-                        const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(clientData.dataExpirare || "");
-                        return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
-                      })()}
-                      onChange={(e) => setClientData({ ...clientData, dataExpirare: normalizeDate(e.target.value) })}
-                    />
-                  </div>
+                  {clientData.tipContract === "cadru" && (
+                    <button
+                      type="button"
+                      className="strip-action with-date"
+                      onClick={(e) => {
+                        const inp = e.currentTarget.querySelector('input[type="date"]');
+                        if (inp?.showPicker) inp.showPicker();
+                        else inp?.focus();
+                      }}
+                    >
+                      <span>📅</span>
+                      <span>Schimbă valabilitate</span>
+                      <input
+                        type="date"
+                        tabIndex={-1}
+                        value={(() => {
+                          const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(clientData.dataExpirare || "");
+                          return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+                        })()}
+                        onChange={(e) => setClientData({ ...clientData, dataExpirare: normalizeDate(e.target.value) })}
+                      />
+                    </button>
+                  )}
                 </div>
               </section>
             )}
@@ -1408,9 +1621,13 @@ function App() {
                       </button>
                     );
                   })}
-                  <button className="chip add" onClick={addAnexa}>+ Anexă nouă</button>
+                  {!(clientData.tipContract === "unic" && anexe.length >= 1) && (
+                    <button className="chip add" onClick={addAnexa}>+ Anexă nouă</button>
+                  )}
                   <div style={{ flex: 1 }} />
-                  <button className="btn ghost" onClick={() => duplicateAnexa(anexaIdx)}>Duplică</button>
+                  {!(clientData.tipContract === "unic" && anexe.length >= 1) && (
+                    <button className="btn ghost" onClick={() => duplicateAnexa(anexaIdx)}>Duplică</button>
+                  )}
                   {anexe.length > 1 && (
                     <button className="btn ghost danger" onClick={() => removeAnexa(anexaIdx)}>Șterge</button>
                   )}
@@ -1553,8 +1770,8 @@ function App() {
                         <button
                           type="button"
                           className="btn"
-                          onClick={() => {
-                            if (!confirm(`Multiplici toate valorile bugetului cu ${bnrConv.rate.toFixed(4)}?`)) return;
+                          onClick={async () => {
+                            if (!(await confirm(`Multiplici toate valorile bugetului cu ${bnrConv.rate.toFixed(4)}?`))) return;
                             const fields = ["valoareServicii", "transport", "diurna", "cazare", "alteCheltuieli"];
                             setAnexe((prev) => prev.map((a, i) => {
                               if (i !== anexaIdx) return a;
@@ -1603,7 +1820,32 @@ function App() {
             )}
 
             {/* BIBLIOTECĂ (Firestore) */}
-            {isSaved && <Biblioteca onOpen={handleOpenFromFirestore} tab={bibliotecaTab} onTabChange={(t) => setStep(t === "clienti" ? "biblioteca-clienti" : "biblioteca-contracte")} />}
+            {isSaved && <Biblioteca
+              onOpen={handleOpenFromFirestore}
+              tab={bibliotecaTab}
+              onTabChange={(t) => setStep(t === "clienti" ? "biblioteca-clienti" : t === "modele" ? "biblioteca-modele" : "biblioteca-contracte")}
+              onOpenBlank={handleShowBlankTemplate}
+              onUseModel={(m) => {
+                handleNewContract();
+                setClientData((prev) => ({
+                  ...prev,
+                  cui: m.cui || "",
+                  numeBeneficiar: m.numeBeneficiar || "",
+                  clauzeCustom: m.clauzeCustom || {},
+                }));
+                setAnexe((prev) => {
+                  const next = [...prev];
+                  if (next[0]) {
+                    next[0] = {
+                      eventData: { ...next[0].eventData, ...(m.defaultEvent || {}) },
+                      budgetData: { ...next[0].budgetData, ...(m.defaultBudget || {}) },
+                    };
+                  }
+                  return next;
+                });
+                setStep("client");
+              }}
+            />}
 
             {/* ERRORS */}
             {errors.length > 0 && (

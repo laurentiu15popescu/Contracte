@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Read(//c/Users/lau/.claude/projects/d--APLICATII-GPT-MAGNETOAPP-LIVRATA-OK/**)"
+    ]
+  }
+}

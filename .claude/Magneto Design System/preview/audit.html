@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F0F4F8; padding: 20px; }
+  .section { margin-bottom: 20px; }
+  .section-title { font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: #6366F1; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: #E8E8E8; }
+  .check-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; border-radius: 10px; margin-bottom: 4px; }
+  .pass { background: #ECFDF5; }
+  .fail { background: #FEF2F2; }
+  .warn { background: #FFFBEB; }
+  .icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; flex-shrink: 0; margin-top: 1px; }
+  .pass .icon { background: #10B981; color: #fff; }
+  .fail .icon { background: #EF4444; color: #fff; }
+  .warn .icon { background: #F59E0B; color: #fff; }
+  .check-text { font-size: 12px; font-weight: 700; flex: 1; }
+  .pass .check-text { color: #065F46; }
+  .fail .check-text { color: #991B1B; }
+  .warn .check-text { color: #92400E; }
+  .check-sub { font-size: 10px; font-weight: 600; margin-top: 2px; opacity: 0.75; }
+
+  /* Score */
+  .score-bar { height: 8px; border-radius: 999px; background: #E8E8E8; overflow: hidden; margin: 12px 0 4px; }
+  .score-fill { height: 100%; border-radius: 999px; background: linear-gradient(to right, #34CAE8, #10B981); }
+  .score-label { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; color: #737373; }
+
+  /* component demo */
+  .demo-box { background: #fff; border-radius: 12px; padding: 12px 14px; border: 1px solid #E8E8E8; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+  <div style="font-size:11px; font-weight:800; letter-spacing:0.6px; text-transform:uppercase; color:#737373; margin-bottom:4px">Design System Audit</div>
+  <div style="font-size:22px; font-weight:900; color:#1A1A1A; margin-bottom:2px">MagnetoApp</div>
+  <div style="font-size:11px; color:#737373; font-weight:600; margin-bottom:16px">Checklist de conformitate cu design system-ul</div>
+
+  <div class="score-bar"><div class="score-fill" style="width:82%"></div></div>
+  <div class="score-label"><span>Scor conformitate</span><span style="color:#10B981">82 / 100</span></div>
+
+  <!-- COLORS -->
+  <div class="section" style="margin-top:18px">
+    <div class="section-title">Culori & Teme</div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">ThemeContext.js definește tokeni complet pentru light + dark</div><div class="check-sub">Toate culorile sunt centralizate — ✓ bine</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">useTheme() folosit consistent în toate componentele UI</div><div class="check-sub">AppButton, Card, StatusBadge, FormInput — toate citesc din theme</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Dark mode complet implementat cu paleta separată</div><div class="check-sub">DarkColors definit cu contrast corect pe fundal navy</div></div></div>
+    <div class="check-row warn"><div class="icon">!</div><div><div class="check-text">Unele culori hardcodate în stiluri locale</div><div class="check-sub">Ex: DashboardAdmin.js folosește '#10b981' direct în toastColor — ar trebui theme.colors.success</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Gradienti brand folosiți corect (brand → accent, stânga→dreapta)</div></div></div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div class="section">
+    <div class="section-title">Tipografie</div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">scaleFont() aplicat consistent — nu sunt px hardcodate în componente UI</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Ierarhie clară: 900 → hero, 800 → headings, 700 → bold body, 600 → medium</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Labels în ALL CAPS cu letterSpacing: 0.8 (SectionLabel, badge text)</div></div></div>
+    <div class="check-row warn"><div class="icon">!</div><div><div class="check-text">Câteva fontSize inline în ecrane (nu în theme.typography)</div><div class="check-sub">PhotographerHome și DashboardAdmin au fontSize direct în JSX pentru câteva elemente speciale</div></div></div>
+  </div>
+
+  <!-- COMPONENTS -->
+  <div class="section">
+    <div class="section-title">Componente</div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">AppButton — toate variantele implementate cu animații corecte</div><div class="check-sub">gradient, primary, secondary, ghost, danger, success, warning</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">StatusBadge — 5 variante + 3 dimensiuni</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">FormInput — focus state (border accent 2px) + error state (border danger 1.5px)</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">StatCard — strip gradient stânga + icon bg top-right</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">QuickActionTile — icon gradient bg (color+'2E' → color+'12')</div></div></div>
+    <div class="check-row warn"><div class="icon">!</div><div><div class="check-text">Unele ecrane nu folosesc <Card> — stiluri inline duplicate</div><div class="check-sub">Recomandare: înlocuiește View + styleSheet cu Card variant="elevated"</div></div></div>
+  </div>
+
+  <!-- COPY -->
+  <div class="section">
+    <div class="section-title">Copy & Limbaj</div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Tot UI-ul în română — fără text în engleză în producție</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Ton motivațional + persoana a doua folosit consistent</div><div class="check-sub">Mesajele zilnice, greeting-urile, quote-urile — toate corecte</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Format număr: 1.500 RON (separator mii = punct)</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Emoji: doar în mesaje motivaționale și rank (🏆🥈🥉🔥) — nu în labels/buttons</div></div></div>
+    <div class="check-row fail"><div class="icon">✗</div><div><div class="check-text">Câteva mesaje de eroare Firebase în engleză (neafișate utilizatorului)</div><div class="check-sub">e.message din Firebase poate ajunge în Alert.alert() — wrap cu mesaj custom în română</div></div></div>
+  </div>
+
+  <!-- ANIMATIONS -->
+  <div class="section">
+    <div class="section-title">Animații & Interacțiuni</div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Press spring animation (scale 0.965/0.97) — toate butoanele și cardurile apăsabile</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Screen entry: fadeIn 800ms + spring translateY</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Toast: sequence fadeIn 300ms → delay 2200ms → fadeOut 300ms</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">Confetti cannon la atingerea target-ului lunar</div></div></div>
+    <div class="check-row warn"><div class="icon">!</div><div><div class="check-text">useNativeDriver: Platform.OS !== 'web' — pattern corect dar repetitiv</div><div class="check-sub">Consideră un helper isNative = Platform.OS !== 'web' pentru DRY</div></div></div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="section">
+    <div class="section-title">Layout & Spacing</div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">contentPadding: 20px orizontal — consistent pe toate ecranele</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">maxWidth: 860px centrat pe web/desktop</div></div></div>
+    <div class="check-row pass"><div class="icon">✓</div><div><div class="check-text">ScreenLayout wrapper folosit pe toate ecranele principale</div></div></div>
+    <div class="check-row warn"><div class="icon">!</div><div><div class="check-text">Spacing ocazional cu valori arbitrare (ex: marginTop: 35)</div><div class="check-sub">Folosește theme.spacing.* în loc de valori magice</div></div></div>
+  </div>
+
+  <div style="background:#EEF2FF; border-radius:14px; padding:14px; border:1px solid #C7D2FE; margin-top:4px">
+    <div style="font-size:11px; font-weight:800; color:#4F46E5; margin-bottom:6px">📋 Priorități de îmbunătățit</div>
+    <div style="font-size:11px; font-weight:700; color:#312E81; line-height:1.7">
+      1. Înlocuiește culorile hardcodate cu theme.colors.* (6-8 locuri)<br>
+      2. Wrap erori Firebase cu mesaje custom în română<br>
+      3. Migrează View-uri cu stiluri inline pe Card component<br>
+      4. Înlocuiește valorile de spacing magice cu theme.spacing.*
+    </div>
+  </div>
+
+</body>
+</html>

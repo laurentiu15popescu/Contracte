@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F0F4F8; padding: 20px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .row { display: flex; gap: 6px; margin-bottom: 8px; align-items: stretch; }
+  .swatch { flex: 1; min-width: 80px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .swatch-color { height: 56px; }
+  .swatch-info { background: #fff; padding: 7px 9px; }
+  .swatch-name { font-size: 10px; font-weight: 800; color: #1A1A1A; }
+  .swatch-hex { font-size: 9px; color: #737373; margin-top: 2px; }
+  .section-label { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #737373; margin-bottom: 8px; margin-top: 14px; }
+  .section-label:first-child { margin-top: 0; }
+  .pair { display: flex; gap: 6px; }
+  .pair .swatch { flex: 1; }
+</style>
+</head>
+<body>
+  <div class="section-label">Semantic Colors — Light</div>
+  <div class="grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#10B981"></div>
+      <div class="swatch-info"><div class="swatch-name">Success</div><div class="swatch-hex">#10B981</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#EF4444"></div>
+      <div class="swatch-info"><div class="swatch-name">Danger</div><div class="swatch-hex">#EF4444</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#F59E0B"></div>
+      <div class="swatch-info"><div class="swatch-name">Warning</div><div class="swatch-hex">#F59E0B</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#EAB308"></div>
+      <div class="swatch-info"><div class="swatch-name">Gold</div><div class="swatch-hex">#EAB308</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#34CAE8"></div>
+      <div class="swatch-info"><div class="swatch-name">Info</div><div class="swatch-hex">#34CAE8</div></div>
+    </div>
+  </div>
+
+  <div class="section-label">Semantic Colors — Dark</div>
+  <div class="grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#34D399"></div>
+      <div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Success</div><div class="swatch-hex">#34D399</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#F87171"></div>
+      <div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Danger</div><div class="swatch-hex">#F87171</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#FBBF24"></div>
+      <div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Warning</div><div class="swatch-hex">#FBBF24</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#FACC15"></div>
+      <div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Gold</div><div class="swatch-hex">#FACC15</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#5ED4F4"></div>
+      <div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Info</div><div class="swatch-hex">#5ED4F4</div></div>
+    </div>
+  </div>
+
+  <div class="section-label">Ranking</div>
+  <div class="grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#FACC15"></div>
+      <div class="swatch-info"><div class="swatch-name">#1 Gold</div><div class="swatch-hex">#FACC15</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#34CAE8"></div>
+      <div class="swatch-info"><div class="swatch-name">#2 Cyan</div><div class="swatch-hex">#34CAE8</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#6366F1"></div>
+      <div class="swatch-info"><div class="swatch-name">#3 Indigo</div><div class="swatch-hex">#6366F1</div></div>
+    </div>
+  </div>
+</body>
+</html>

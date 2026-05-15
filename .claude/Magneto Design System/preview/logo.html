@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0F1626; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+  .logo-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .logo-container {
+    width: 120px; height: 120px; border-radius: 60px; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  .logo-container img { width: 90%; height: 90%; object-fit: contain; }
+  .logo-sm {
+    width: 72px; height: 72px; border-radius: 36px; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+  }
+  .logo-sm img { width: 85%; height: 85%; object-fit: contain; }
+  .app-icon {
+    width: 80px; height: 80px; border-radius: 18px; overflow: hidden;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  }
+  .app-icon img { width: 100%; height: 100%; object-fit: cover; }
+  .info { color: #F4F7FB; }
+  .info h2 { font-size: 22px; font-weight: 900; letter-spacing: -0.3px; }
+  .info p { font-size: 12px; color: #7D8CA3; margin-top: 4px; font-weight: 600; }
+
+  .gradient-wordmark {
+    font-size: 36px; font-weight: 900; letter-spacing: -0.5px;
+    background: linear-gradient(to right, #34CAE8, #6366F1);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .light-bg { background: #F0F4F8; padding: 20px; border-radius: 16px; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #7D8CA3; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+  <div class="label">Logo on Dark</div>
+  <div class="logo-row">
+    <div class="logo-container">
+      <img src="../assets/logo_magneto.png" alt="Magneto Logo">
+    </div>
+    <div class="logo-sm">
+      <img src="../assets/logo_magneto.png" alt="Magneto Logo Small">
+    </div>
+    <div class="info">
+      <h2>MagnetoApp</h2>
+      <p>Photography revenue tracking</p>
+      <p style="margin-top:8px; color:#5ED4F4; font-size:11px">logo_magneto.png</p>
+    </div>
+  </div>
+
+  <div class="label">Gradient Wordmark</div>
+  <div class="gradient-wordmark">Magneto</div>
+
+  <div class="label">App Icon</div>
+  <div class="logo-row">
+    <div class="app-icon">
+      <img src="../assets/icon.png" alt="App Icon">
+    </div>
+    <div class="app-icon" style="border-radius:28px">
+      <img src="../assets/adaptive-icon.png" alt="Adaptive Icon">
+    </div>
+    <div style="color:#7D8CA3; font-size:11px; font-weight:700">
+      <div>icon.png — iOS</div>
+      <div style="margin-top:4px">adaptive-icon.png — Android</div>
+    </div>
+  </div>
+
+  <div class="label">Logo on Light</div>
+  <div class="light-bg">
+    <div class="logo-row">
+      <div style="width:80px; height:80px; border-radius:40px; background:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,0.1)">
+        <img src="../assets/logo_magneto.png" style="width:85%; height:85%; object-fit:contain" alt="Logo">
+      </div>
+      <div style="color:#1A1A1A">
+        <div style="font-size:20px; font-weight:900">MagnetoApp</div>
+        <div style="font-size:12px; color:#737373; font-weight:600; margin-top:2px">Photography Team Platform</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

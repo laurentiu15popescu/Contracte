@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #E5EAF0; padding: 20px; }
+  .row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .swatch { flex: 1; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.09); border: 1px solid rgba(0,0,0,0.05); }
+  .swatch-color { height: 44px; }
+  .swatch-info { padding: 6px 8px; background: #fff; }
+  .swatch-name { font-size: 10px; font-weight: 800; color: #1A1A1A; }
+  .swatch-hex { font-size: 9px; color: #737373; margin-top: 2px; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #737373; margin-bottom: 8px; margin-top: 12px; }
+  .label:first-child { margin-top: 0; }
+</style>
+</head>
+<body>
+  <div class="label">Light Surfaces</div>
+  <div class="row">
+    <div class="swatch"><div class="swatch-color" style="background:#F0F4F8"></div><div class="swatch-info"><div class="swatch-name">BG</div><div class="swatch-hex">#F0F4F8</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#FFFFFF; border-bottom: 1px solid #eee"></div><div class="swatch-info"><div class="swatch-name">Surface</div><div class="swatch-hex">#FFFFFF</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#FFFFFF"></div><div class="swatch-info"><div class="swatch-name">Card</div><div class="swatch-hex">#FFFFFF</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#F7F8FC"></div><div class="swatch-info"><div class="swatch-name">Panel</div><div class="swatch-hex">#F7F8FC</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#EEF2FF"></div><div class="swatch-info"><div class="swatch-name">Highlight</div><div class="swatch-hex">#EEF2FF</div></div></div>
+  </div>
+  <div class="row">
+    <div class="swatch"><div class="swatch-color" style="background:#E8E8E8"></div><div class="swatch-info"><div class="swatch-name">Border</div><div class="swatch-hex">#E8E8E8</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#D4D4D4"></div><div class="swatch-info"><div class="swatch-name">Border Strong</div><div class="swatch-hex">#D4D4D4</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#F0F0F0"></div><div class="swatch-info"><div class="swatch-name">Separator</div><div class="swatch-hex">#F0F0F0</div></div></div>
+  </div>
+
+  <div class="label">Dark Surfaces</div>
+  <div class="row">
+    <div class="swatch"><div class="swatch-color" style="background:#0F1626"></div><div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">BG</div><div class="swatch-hex">#0F1626</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#151D2E"></div><div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Surface</div><div class="swatch-hex">#151D2E</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#1A2438"></div><div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Card</div><div class="swatch-hex">#1A2438</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#1E2A40"></div><div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Panel</div><div class="swatch-hex">#1E2A40</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#243047"></div><div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Highlight</div><div class="swatch-hex">#243047</div></div></div>
+  </div>
+  <div class="row">
+    <div class="swatch"><div class="swatch-color" style="background:#2D3A52"></div><div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Border</div><div class="swatch-hex">#2D3A52</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#3F4F6C"></div><div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Border Strong</div><div class="swatch-hex">#3F4F6C</div></div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#222C3E"></div><div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Separator</div><div class="swatch-hex">#222C3E</div></div></div>
+  </div>
+</body>
+</html>

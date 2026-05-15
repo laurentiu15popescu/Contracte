@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F0F4F8; padding: 20px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .swatch { flex: 1; min-width: 100px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .swatch-color { height: 64px; }
+  .swatch-info { background: #fff; padding: 8px 10px; }
+  .swatch-name { font-size: 11px; font-weight: 800; color: #1A1A1A; }
+  .swatch-hex { font-size: 10px; color: #737373; margin-top: 2px; font-weight: 600; }
+  .section-label { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #737373; margin-bottom: 10px; margin-top: 16px; }
+  .section-label:first-child { margin-top: 0; }
+  .gradient-swatch { height: 64px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 6px; }
+  .gradient-label { font-size: 10px; font-weight: 700; color: #737373; }
+</style>
+</head>
+<body>
+  <div class="section-label">Brand Colors</div>
+  <div class="grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#6366F1"></div>
+      <div class="swatch-info"><div class="swatch-name">Brand / Accent</div><div class="swatch-hex">#6366F1</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#34CAE8"></div>
+      <div class="swatch-info"><div class="swatch-name">Cyan Secondary</div><div class="swatch-hex">#34CAE8</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#4F46E5"></div>
+      <div class="swatch-info"><div class="swatch-name">Indigo Deep</div><div class="swatch-hex">#4F46E5</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#818CF8"></div>
+      <div class="swatch-info"><div class="swatch-name">Indigo Light</div><div class="swatch-hex">#818CF8</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#E8F4FE"></div>
+      <div class="swatch-info"><div class="swatch-name">Accent Soft</div><div class="swatch-hex">#E8F4FE</div></div>
+    </div>
+  </div>
+
+  <div class="section-label">Brand Gradient</div>
+  <div class="gradient-swatch" style="background: linear-gradient(to right, #34CAE8, #6366F1)"></div>
+  <div class="gradient-label">Cyan → Indigo — used on primary CTA buttons & avatar borders</div>
+
+  <div class="section-label" style="margin-top:14px">Dark Mode Brand</div>
+  <div class="grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#7570F5"></div>
+      <div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Brand Dark</div><div class="swatch-hex">#7570F5</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#5ED4F4"></div>
+      <div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Accent Dark</div><div class="swatch-hex">#5ED4F4</div></div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#A5B4FC"></div>
+      <div class="swatch-info" style="background:#1A2438"><div class="swatch-name" style="color:#F4F7FB">Soft Text Dark</div><div class="swatch-hex">#A5B4FC</div></div>
+    </div>
+  </div>
+</body>
+</html>

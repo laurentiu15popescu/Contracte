@@ -1,0 +1,232 @@
+{
+  "MagnetoApp React Native Snippets": {
+    "AppButton Gradient": {
+      "prefix": "mbutton-gradient",
+      "body": [
+        "<AppButton",
+        "  variant=\"gradient\"",
+        "  label=\"${1:Conectare}\"",
+        "  icon=\"${2:arrow-forward}\"",
+        "  IconComponent={${3:Ionicons}}",
+        "  iconPosition=\"${4:right}\"",
+        "  size=\"${5:lg}\"",
+        "  onPress={${6:handlePress}}",
+        "  loading={${7:false}}",
+        "  fullWidth",
+        "/>"
+      ],
+      "description": "Primary gradient CTA button"
+    },
+    "AppButton Primary": {
+      "prefix": "mbutton-primary",
+      "body": [
+        "<AppButton",
+        "  variant=\"primary\"",
+        "  label=\"${1:Salvează}\"",
+        "  size=\"${2:md}\"",
+        "  onPress={${3:handlePress}}",
+        "/>"
+      ],
+      "description": "Primary solid button"
+    },
+    "AppButton Ghost": {
+      "prefix": "mbutton-ghost",
+      "body": [
+        "<AppButton",
+        "  variant=\"ghost\"",
+        "  label=\"${1:Anulează}\"",
+        "  size=\"${2:md}\"",
+        "  onPress={${3:handlePress}}",
+        "/>"
+      ],
+      "description": "Ghost/outline button"
+    },
+    "AppButton Danger": {
+      "prefix": "mbutton-danger",
+      "body": [
+        "<AppButton",
+        "  variant=\"danger\"",
+        "  label=\"${1:Șterge}\"",
+        "  icon=\"${2:trash-outline}\"",
+        "  IconComponent={${3:Ionicons}}",
+        "  size=\"${4:md}\"",
+        "  onPress={${5:handleDelete}}",
+        "/>"
+      ],
+      "description": "Danger/destructive button"
+    },
+    "StatusBadge": {
+      "prefix": "mbadge",
+      "body": [
+        "<StatusBadge",
+        "  label=\"${1:Confirmat}\"",
+        "  variant=\"${2|success,warning,danger,info,neutral|}\"",
+        "  size=\"${3|md,sm,lg|}\"",
+        "  theme={theme}",
+        "/>"
+      ],
+      "description": "Status chip/badge"
+    },
+    "StatCard KPI": {
+      "prefix": "mstatcard",
+      "body": [
+        "<StatCard",
+        "  title=\"${1:Încasări Azi}\"",
+        "  value=\"${2:1.850}\"",
+        "  subValue=\"${3:Cash: 1.200 | Card: 650}\"",
+        "  icon=\"${4:attach-money}\"",
+        "  IconComponent={${5:MaterialIcons}}",
+        "  color={theme.colors.${6:success}}",
+        "  theme={theme}",
+        "  scaleFont={scaleFont}",
+        "/>"
+      ],
+      "description": "KPI stat card with color strip"
+    },
+    "Card Default": {
+      "prefix": "mcard",
+      "body": [
+        "<Card variant=\"${1|default,elevated,outlined,soft|}\" theme={theme} ${2:onPress={handlePress}}>",
+        "  ${3:/* content */}",
+        "</Card>"
+      ],
+      "description": "Standard card component"
+    },
+    "FormInput": {
+      "prefix": "minput",
+      "body": [
+        "<FormInput",
+        "  label=\"${1:Email}\"",
+        "  placeholder=\"${2:fotograf@magneto.ro}\"",
+        "  value={${3:email}}",
+        "  onChangeText={${4:setEmail}}",
+        "  error={${5:eroare}}",
+        "  required",
+        "  theme={theme}",
+        "/>"
+      ],
+      "description": "Form text input with label and error"
+    },
+    "QuickActionTile": {
+      "prefix": "mtile",
+      "body": [
+        "<QuickActionTile",
+        "  label=\"${1:Încasare}\"",
+        "  icon=\"${2:hand-holding-usd}\"",
+        "  IconComponent={${3:FontAwesome5}}",
+        "  color={theme.colors.${4:success}}",
+        "  onPress={${5:handlePress}}",
+        "  theme={theme}",
+        "  scaleFont={scaleFont}",
+        "/>"
+      ],
+      "description": "Quick action icon tile"
+    },
+    "SectionLabel": {
+      "prefix": "msection",
+      "body": [
+        "<SectionLabel theme={theme} style={{ marginBottom: ${1:10} }}>",
+        "  ${2:Titlu Secțiune}",
+        "</SectionLabel>"
+      ],
+      "description": "Section header label"
+    },
+    "useTheme hook": {
+      "prefix": "mtheme",
+      "body": [
+        "const { theme, isDarkMode, toggleTheme } = useTheme();",
+        "const { scaleFont } = useResponsive();"
+      ],
+      "description": "Standard theme + responsive hooks"
+    },
+    "Brand LinearGradient": {
+      "prefix": "mgradient",
+      "body": [
+        "<LinearGradient",
+        "  colors={[theme.colors.brand, theme.colors.accent]}",
+        "  start={{ x: 0, y: 0 }}",
+        "  end={{ x: 1, y: 0 }}",
+        "  style={${1:styles.gradient}}",
+        ">"
+      ],
+      "description": "Brand gradient (cyan → indigo)"
+    },
+    "AdminSectionCard": {
+      "prefix": "madminsection",
+      "body": [
+        "<AdminSectionCard",
+        "  title=\"${1:Acțiuni Rapide}\"",
+        "  theme={theme}",
+        "  style={{ marginTop: theme.spacing.sectionSpacing }}",
+        ">",
+        "  ${2:/* content */}",
+        "</AdminSectionCard>"
+      ],
+      "description": "Admin section card with title"
+    },
+    "Screen template": {
+      "prefix": "mscreen",
+      "body": [
+        "import React from 'react';",
+        "import { View, Text, ScrollView } from 'react-native';",
+        "import { useTheme } from '../../context/ThemeContext';",
+        "import { useResponsive } from '../../hooks/useResponsive';",
+        "import ScreenLayout from '../../components/ScreenLayout';",
+        "",
+        "const ${1:NouScreen} = () => {",
+        "  const { theme } = useTheme();",
+        "  const { scaleFont } = useResponsive();",
+        "  const c = theme.colors;",
+        "",
+        "  return (",
+        "    <ScreenLayout>",
+        "      <View style={{ padding: theme.spacing.contentPadding }}>",
+        "        <Text style={theme.typography.h1}>${2:Titlu}</Text>",
+        "      </View>",
+        "    </ScreenLayout>",
+        "  );",
+        "};",
+        "",
+        "export default ${1:NouScreen};"
+      ],
+      "description": "Blank screen with theme boilerplate"
+    },
+    "Toast show": {
+      "prefix": "mtoast",
+      "body": [
+        "showToast('${1:Salvat cu succes.}', theme.colors.${2:success});"
+      ],
+      "description": "Show toast notification"
+    },
+    "Press animation": {
+      "prefix": "mpress",
+      "body": [
+        "const scale = useRef(new Animated.Value(1)).current;",
+        "",
+        "const handlePressIn = () => Animated.spring(scale, {",
+        "  toValue: ${1:0.965}, speed: 50, bounciness: 0, useNativeDriver: true,",
+        "}).start();",
+        "",
+        "const handlePressOut = () => Animated.spring(scale, {",
+        "  toValue: 1, speed: 22, bounciness: 4, useNativeDriver: true,",
+        "}).start();"
+      ],
+      "description": "Standard Magneto press animation"
+    },
+    "Empty state": {
+      "prefix": "mempty",
+      "body": [
+        "<View style={{ alignItems: 'center', padding: theme.spacing.xl }}>",
+        "  <${1:Ionicons} name=\"${2:calendar-clear-outline}\" size={32} color={theme.colors.subText} style={{ marginBottom: 8 }} />",
+        "  <Text style={[theme.typography.bodyBold, { color: theme.colors.text, marginBottom: 4 }]}>",
+        "    ${3:Nicio înregistrare}",
+        "  </Text>",
+        "  <Text style={[theme.typography.small, { textAlign: 'center' }]}>",
+        "    ${4:Adaugă prima înregistrare pentru a o vedea aici.}",
+        "  </Text>",
+        "</View>"
+      ],
+      "description": "Standard empty state component"
+    }
+  }
+}

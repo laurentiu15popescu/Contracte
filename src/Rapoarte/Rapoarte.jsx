@@ -3,6 +3,7 @@ import { collection, getDocs, doc, updateDoc, serverTimestamp } from "firebase/f
 import { db } from "../shared/firebase";
 import "../Dashboard/Dashboard.css";
 import "./Rapoarte.css";
+import { useDialog } from "../shared/Dialog";
 
 /* ---------- Helpers ---------- */
 const fmt = (n) => new Intl.NumberFormat("ro-RO").format(Math.round(Number(n) || 0));
@@ -49,6 +50,7 @@ const downloadCsv = (rows, filename) => {
 };
 
 export default function Rapoarte({ onOpenContract, onNewContract }) {
+  const { alert } = useDialog();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [evenimente, setEvenimente] = useState([]);
@@ -142,7 +144,7 @@ export default function Rapoarte({ onOpenContract, onNewContract }) {
           : i
       ));
     } catch (e) {
-      alert("Eroare actualizare status: " + e.message);
+      await alert("Eroare actualizare status: " + e.message, { variant: "danger" });
     }
   };
 

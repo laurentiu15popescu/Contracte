@@ -79,14 +79,12 @@ export const SECTIUNI_CONTRACT = [
         render: ({ numar, data }) => (
           <p>
             <strong>{numar}.</strong> Prezentul contract intră în vigoare la data semnării sale de către ambele părți și{" "}
-            {data.dataExpirare ? (
-              <>
-                este valabil până la data de <strong>{data.dataExpirare}</strong> și poate fi prelungit de comun acord prin semnarea unui act adițional.
-              </>
-            ) : data.tipContract === "unic" ? (
-              <>este valabil până la predarea integrală a materialelor și stingerea tuturor obligațiilor părților conform anexei.</>
+            {data.tipContract === "unic" ? (
+              <>este valabil până la predarea integrală a materialelor și stingerea tuturor obligațiilor de plată ale părților, conform anexei.</>
             ) : (
-              <>este încheiat pe durată nedeterminată, putând fi denunțat unilateral conform <Ref to="denuntare-unilaterala" idMap={data._idMap} />.</>
+              <>
+                este valabil până la data de <strong>{data.dataExpirare || "..............................."}</strong> și poate fi prelungit de comun acord prin semnarea unui act adițional.
+              </>
             )}
           </p>
         ),
@@ -103,9 +101,9 @@ export const SECTIUNI_CONTRACT = [
       { id: "of-informare", text: "Furnizorul are obligația de a informa Beneficiarul de îndată ce ia cunoștință despre existența oricărei împrejurări care ar putea afecta executarea serviciilor la data, în intervalul orar sau în condițiile convenite. În cazul în care Furnizorul nu se prezintă la eveniment, refuză nejustificat executarea serviciilor sau se află în imposibilitatea de a presta serviciile și nu asigură, cu acordul prealabil al Beneficiarului, un înlocuitor cu pregătire și experiență comparabile, Beneficiarul va avea dreptul să solicite daune-interese de până la 50% din valoarea serviciilor aferente proiectului sau evenimentului afectat, fără a aduce atingere dreptului de a solicita repararea integrală a prejudiciului dovedit, în condițiile legii, în măsura în care acesta depășește cuantumul menționat." },
       { id: "of-termen", text: "Furnizorul se obligă să predea imaginile finale în termenul agreat de comun acord de părți, termen care va fi specificat în anexele contractului, în funcție de particularitățile fiecărui proiect. Termenele de livrare vor fi considerate esențiale, având în vedere utilitatea comercială și de comunicare a materialelor pentru Beneficiar." },
       { id: "of-penalitati", text: "În cazul întârzierii livrării materialelor finale cu mai mult de 5 zile lucrătoare față de termenul convenit, Beneficiarul va avea dreptul să solicite penalități de întârziere în cuantum de 0,1% din valoarea serviciilor aferente livrării întârziate pentru fiecare zi de întârziere, fără ca valoarea totală a acestor penalități să poată depăși 10% din valoarea respectivelor servicii." },
-      { id: "of-echipament", text: "Furnizorul va utiliza numai echipament fotografic de calitate profesională, adecvate naturii serviciilor contractate, și să asigure personal calificat și suficient pentru executarea." },
+      { id: "of-echipament", text: "Furnizorul va utiliza numai echipament fotografic și videografic de calitate profesională, adecvat naturii serviciilor contractate, și se obligă să asigure personal calificat și suficient pentru executarea serviciilor în condițiile și la standardele convenite cu Beneficiarul." },
       { id: "of-program", text: "Furnizorul se obligă să respecte programul, locația, cerințele organizatorice și instrucțiunile rezonabile comunicate de Beneficiar sau de reprezentanții desemnați ai acestuia pe durata desfășurării evenimentului, în măsura în care acestea nu contravin obiectului contractului și uzanțelor profesionale aplicabile." },
-      { id: "of-pastrare", text: "Furnizorul are obligația de a păstra imaginile în formă finală, pe suport digital la rezoluție mare, timp de 90 de zile calendaristice de la data predării acestora către Beneficiar." },
+      { id: "of-pastrare", text: "Furnizorul are obligația de a păstra imaginile în formă finală, pe suport digital la rezoluție mare, timp de 90 de zile calendaristice de la data predării acestora către Beneficiar. După expirarea acestui termen, Furnizorul nu mai răspunde pentru indisponibilitatea, pierderea sau distrugerea materialelor, Beneficiarul având obligația de a-și constitui propria arhivă în interiorul termenului menționat." },
       { id: "of-remediere", text: "În cazul în care materialele livrate prezintă erori tehnice evidente, sunt incomplete față de cele asumate sau nu corespund în mod substanțial cerințelor convenite, Furnizorul va avea obligația de a remedia neconformitățile într-un termen rezonabil comunicat de Beneficiar, fără costuri suplimentare pentru acesta." },
     ],
   },
@@ -147,7 +145,7 @@ export const SECTIUNI_CONTRACT = [
     id: "fm",
     titlu: "Forță majoră",
     clauze: [
-      { id: "fm-1", text: "Forța majoră, uzual definită, apără de răspundere partea care o invocă. Intervenirea cazului de forță majoră se va comunica în scris celeilalte părți, în termen de 3 zile de la producerea acesteia." },
+      { id: "fm-1", text: "Forța majoră, astfel cum este definită la art. 1.351 alin. (2) din Codul civil, respectiv orice eveniment extern, imprevizibil, absolut invincibil și inevitabil, apără de răspundere partea care o invocă. Sunt asimilate forței majore, în condițiile mai sus menționate, pandemiile, restricțiile dispuse de autorități, dezastrele naturale și actele autorităților publice care fac imposibilă executarea contractului. Intervenirea cazului de forță majoră se va comunica în scris celeilalte părți, în termen de 3 zile calendaristice de la producerea acesteia, sub sancțiunea decăderii din dreptul de a o invoca." },
       { id: "fm-2", text: "În cazul în care evenimentul de forță majoră se prelungește pentru o perioadă mai mare de 15 zile calendaristice și executarea contractului devine imposibilă sau lipsită de utilitate pentru una dintre părți, oricare dintre părți va avea dreptul de a înceta contractul prin notificare scrisă, fără plata de despăgubiri." },
     ],
   },
@@ -196,6 +194,7 @@ export const SECTIUNI_CONTRACT = [
     titlu: "Clauze finale",
     fara_numerotare_clauze: true,
     clauze: [
+      { id: "fin-cesiune", noNum: true, text: "Niciuna dintre părți nu poate cesiona, total sau parțial, drepturile și obligațiile decurgând din prezentul contract către terți fără acordul prealabil, scris și expres al celeilalte părți, cu excepția cesiunii efectuate în cadrul unei reorganizări corporative (fuziune, divizare, transfer de afaceri) a părții cedente, situație în care cesiunea operează cu simpla notificare scrisă transmisă celeilalte părți." },
       { id: "fin-lege", noNum: true, text: "Prezentul contract este guvernat de legea română. Orice neînțelegere se va soluționa pe cale amiabilă. În caz de eșec al concilierii, competența de soluționare a litigiului aparține instanțelor judecătorești din Municipiul București." },
       {
         id: "fin-incheiat",
@@ -225,7 +224,7 @@ export const SECTIUNI_ANEXA = [
         id: "ax-obiect",
         render: ({ numar, data }) => (
           <p>
-            <strong>{numar}.</strong> Obiectul prezentei anexe îl constituie prestarea de servicii fotografice și videografice profesionale de către Furnizor, contra cost, în favoarea Beneficiarului, la data de <strong>{data._dataCurenta}</strong>.
+            <strong>{numar}.</strong> Obiectul prezentei anexe, semnată la data de <strong>{data._dataCurenta}</strong>, îl constituie prestarea de servicii fotografice și videografice profesionale de către Furnizor, contra cost, în favoarea Beneficiarului.
           </p>
         ),
       },
@@ -254,7 +253,7 @@ export const SECTIUNI_ANEXA = [
           );
         },
       },
-      { id: "ax-pastrare", text: "Furnizorul are obligația de a păstra imaginile în forma finală pe suport digital la rezoluție mare, timp de 90 zile de la data predării către Beneficiar." },
+      { id: "ax-pastrare", text: "Furnizorul are obligația de a păstra imaginile în forma finală pe suport digital la rezoluție mare, timp de 90 zile calendaristice de la data predării către Beneficiar. După expirarea acestui termen, Furnizorul nu mai răspunde pentru indisponibilitatea, pierderea sau distrugerea materialelor, Beneficiarul având obligația de a-și constitui propria arhivă în interiorul termenului menționat." },
       {
         id: "ax-valoare",
         render: ({ numar, data }) => (

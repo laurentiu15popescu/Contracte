@@ -12,6 +12,51 @@ db.version(2).stores({
     if (!c.status) c.status = "draft";
   })
 );
+db.version(3).stores({
+  contracte: "++id, numarContract, dataContract, cui, numeBeneficiar, updatedAt, status",
+  modele: "++id, cui, hash, updatedAt",
+});
+
+// FNV-1a 32-bit — hash stabil pentru deduplicare clauze
+export const hashClauze = (clauzeCustom) => {
+  const s = JSON.stringify(clauzeCustom || {});
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+};
+
+export const saveModel = async ({ cui, numeBeneficiar, clauzeCustom, defaultEvent, defaultBudget }) => {
+  const hash = hashClauze(clauzeCustom);
+  const existing = await db.modele.where("hash").equals(hash).first();
+  if (existing) return { id: existing.id, duplicate: true };
+  const now = new Date().toISOString();
+  const id = await db.modele.add({
+    cui: cui || "",
+    numeBeneficiar: numeBeneficiar || "",
+    clauzeCustom: clauzeCustom || {},
+    defaultEvent: defaultEvent || {},
+    defaultBudget: defaultBudget || {},
+    hash,
+    createdAt: now,
+    updatedAt: now,
+  });
+  return { id, duplicate: false };
+};
+
+export const listModele = () =>
+  db.modele.orderBy("updatedAt").reverse().toArray();
+
+export const getModeleByCui = (cui) => {
+  if (!cui) return Promise.resolve([]);
+  return db.modele.where("cui").equals(cui).toArray();
+};
+
+export const getModel = (id) => db.modele.get(id);
+
+export const deleteModel = (id) => db.modele.delete(id);
 
 const sumBudget = (b) =>
   (Number(b?.valoareServicii) || 0) +

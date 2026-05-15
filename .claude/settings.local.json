@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find . -name *_F.js -o -name *_corrected*.js -o -name *_updated.js)",
+      "Bash(xargs grep:*)",
+      "Bash(npm install:*)",
+      "Bash(grep -n import.*format d:APLICATII GPTMAGNETOAPP_LIVRATA_OKsrc/screens/*/*.js d:APLICATII GPTMAGNETOAPP_LIVRATA_OKsrc/components/*/*.js)",
+      "Bash(python3 -c \":*)",
+      "Bash(node -e \":*)",
+      "WebFetch(domain:berariah.ro)",
+      "WebSearch",
+      "Bash(firebase deploy:*)",
+      "WebFetch(domain:www.berariah.ro)",
+      "WebFetch(domain:14thlane.ro)",
+      "WebFetch(domain:riviera-park.ro)",
+      "Bash(node -e \"const fs = require\\(''fs''\\); const content = fs.readFileSync\\(''src/screens/Admin/DisponibilitatiAdminScreen.js'', ''utf8''\\); const lines = content.split\\(''\\\\n''\\); console.log\\(''Total lines:'', lines.length\\); lines.slice\\(530, 545\\).forEach\\(\\(l, i\\) => console.log\\(530+i+1, JSON.stringify\\(l\\)\\)\\);\")",
+      "Bash(node -e \"const fs = require\\(''fs''\\); const content = fs.readFileSync\\(''src/screens/Admin/DisponibilitatiAdminScreen.js'', ''utf8''\\); const lines = content.split\\(''\\\\n''\\); lines.slice\\(448, 460\\).forEach\\(\\(l, i\\) => console.log\\(448+i+1, JSON.stringify\\(l\\)\\)\\);\")",
+      "Bash(grep -v \"StyleSheet\\\\|//\")",
+      "Bash(curl -s -A \"Mozilla/5.0\" -L \"https://berariah.ro/\")",
+      "Bash(curl -s -A \"Mozilla/5.0\" \"https://riviera-park.ro/\")",
+      "Bash(curl -s -A \"Mozilla/5.0\" \"https://14thlane.ro/\")",
+      "Bash(curl -s \"https://berariah.ro/ev/minodora-live-2026\")",
+      "Bash(curl -s \"https://riviera-park.ro/\")",
+      "Bash(curl -s \"https://berariah.ro/ev/bug-mafia-brh\")",
+      "Bash(curl -s \"https://riviera-park.ro/evenimente-viitoare\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(where magick *)",
+      "Bash(where ffmpeg *)",
+      "Bash(where sips *)",
+      "Bash(node -e \"console.log\\(require.resolve\\('sharp'\\)\\)\")",
+      "Bash(node -e \"require\\('@babel/parser'\\).parse\\(require\\('fs'\\).readFileSync\\('src/screens/Admin/DashboardAdmin.js','utf8'\\),{sourceType:'module',plugins:['jsx']}\\); console.log\\('OK'\\)\")"
+    ]
+  }
+}

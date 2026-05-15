@@ -1,0 +1,226 @@
+{
+  "name": "magneto-design-tokens",
+  "version": "1.0.0",
+  "description": "MagnetoApp design tokens — reverse-engineered from ThemeContext.js",
+  "metadata": {
+    "source": "src/context/ThemeContext.js",
+    "stack": "React Native + Expo SDK 54",
+    "language": "Romanian"
+  },
+
+  "color": {
+    "brand": {
+      "cyan":   { "value": "#34CAE8", "comment": "gradient start, info color" },
+      "indigo": { "value": "#6366F1", "comment": "gradient end, primary brand" }
+    },
+    "light": {
+      "bg":               { "value": "#F0F4F8" },
+      "surface":          { "value": "#FFFFFF" },
+      "card":             { "value": "#FFFFFF" },
+      "panel":            { "value": "#F7F8FC" },
+      "surfaceHighlight": { "value": "#EEF2FF" },
+      "inputBg":          { "value": "#FFFFFF" },
+      "text":             { "value": "#1A1A1A" },
+      "textPrimary":      { "value": "#1A1A1A" },
+      "textSecondary":    { "value": "#737373" },
+      "subText":          { "value": "#A3A3A3" },
+      "border":           { "value": "#E8E8E8" },
+      "borderStrong":     { "value": "#D4D4D4" },
+      "separator":        { "value": "#F0F0F0" },
+      "accent":           { "value": "#6366F1", "comment": "primary CTA" },
+      "brand":            { "value": "#6366F1" },
+      "accentSecondary":  { "value": "#34CAE8" },
+      "accentSoft":       { "value": "#E8F4FE" },
+      "accentSoftText":   { "value": "#312E81" },
+      "success":          { "value": "#10B981" },
+      "danger":           { "value": "#EF4444" },
+      "warning":          { "value": "#F59E0B" },
+      "gold":             { "value": "#EAB308" },
+      "info":             { "value": "#34CAE8" },
+      "rank1":            { "value": "#FACC15" },
+      "rank2":            { "value": "#34CAE8" },
+      "rank3":            { "value": "#6366F1" },
+      "tabInactive":      { "value": "#A3A3A3" },
+      "chipSuccessBg":    { "value": "#ECFDF5" },
+      "chipSuccessText":  { "value": "#047857" },
+      "chipWarningBg":    { "value": "#FFFBEB" },
+      "chipWarningText":  { "value": "#B45309" },
+      "chipDangerBg":     { "value": "#FEF2F2" },
+      "chipDangerText":   { "value": "#B91C1C" },
+      "chipInfoBg":       { "value": "#EFF6FF" },
+      "chipInfoText":     { "value": "#1D4ED8" },
+      "chipNeutralBg":    { "value": "#F4F4F5" },
+      "chipNeutralText":  { "value": "#52525B" }
+    },
+    "dark": {
+      "bg":               { "value": "#0F1626" },
+      "surface":          { "value": "#151D2E" },
+      "card":             { "value": "#1A2438" },
+      "panel":            { "value": "#1E2A40" },
+      "surfaceHighlight": { "value": "#243047" },
+      "inputBg":          { "value": "#121B2C" },
+      "text":             { "value": "#F4F7FB" },
+      "textPrimary":      { "value": "#F4F7FB" },
+      "textSecondary":    { "value": "#94A3B8" },
+      "subText":          { "value": "#7D8CA3" },
+      "border":           { "value": "#2D3A52" },
+      "borderStrong":     { "value": "#3F4F6C" },
+      "separator":        { "value": "#222C3E" },
+      "accent":           { "value": "#5ED4F4" },
+      "brand":            { "value": "#7570F5" },
+      "accentSecondary":  { "value": "#5ED4F4" },
+      "accentSoft":       { "value": "#252E45" },
+      "accentSoftText":   { "value": "#A5B4FC" },
+      "success":          { "value": "#34D399" },
+      "danger":           { "value": "#F87171" },
+      "warning":          { "value": "#FBBF24" },
+      "gold":             { "value": "#FACC15" },
+      "info":             { "value": "#5ED4F4" },
+      "rank1":            { "value": "#FBBF24" },
+      "rank2":            { "value": "#5ED4F4" },
+      "rank3":            { "value": "#7570F5" },
+      "tabInactive":      { "value": "#8B97AD" },
+      "chipSuccessBg":    { "value": "#064E3B" },
+      "chipSuccessText":  { "value": "#6EE7B7" },
+      "chipWarningBg":    { "value": "#422006" },
+      "chipWarningText":  { "value": "#FCD34D" },
+      "chipDangerBg":     { "value": "#450A0A" },
+      "chipDangerText":   { "value": "#FCA5A5" },
+      "chipInfoBg":       { "value": "#1E3A5F" },
+      "chipInfoText":     { "value": "#93C5FD" },
+      "chipNeutralBg":    { "value": "#27272A" },
+      "chipNeutralText":  { "value": "#A1A1AA" }
+    },
+    "gradient": {
+      "brand":      { "value": "linear-gradient(to right, #34CAE8, #6366F1)" },
+      "loginLight": { "value": "linear-gradient(135deg, #f8fafc, #e0e7ff, #4f46e5)" },
+      "loginDark":  { "value": "linear-gradient(135deg, #0f172a, #1e1b4b, #312e81)" }
+    }
+  },
+
+  "typography": {
+    "fontFamily": {
+      "base": { "value": "system-ui, -apple-system, 'SF Pro Display', Roboto, sans-serif" },
+      "mono": { "value": "'SF Mono', 'Fira Code', monospace" }
+    },
+    "fontSize": {
+      "label":   { "value": 10, "comment": "scaleFont(10)" },
+      "caption": { "value": 11, "comment": "scaleFont(11)" },
+      "small":   { "value": 10, "comment": "scaleFont(10)" },
+      "body":    { "value": 13, "comment": "scaleFont(13)" },
+      "h4":      { "value": 14, "comment": "scaleFont(14)" },
+      "h3":      { "value": 16, "comment": "scaleFont(16)" },
+      "h2":      { "value": 20, "comment": "scaleFont(20)" },
+      "h1":      { "value": 24, "comment": "scaleFont(24)" },
+      "bigNumber":{ "value": 32, "comment": "scaleFont(32)" }
+    },
+    "fontWeight": {
+      "regular": { "value": "400" },
+      "medium":  { "value": "600" },
+      "bold":    { "value": "700" },
+      "heavy":   { "value": "800" },
+      "black":   { "value": "900" }
+    },
+    "letterSpacing": {
+      "label":   { "value": 0.8 },
+      "h1":      { "value": -0.4 },
+      "h2":      { "value": -0.3 },
+      "bigNumber":{ "value": -1 }
+    },
+    "lineHeight": {
+      "body": { "value": 19 }
+    }
+  },
+
+  "spacing": {
+    "xs":  { "value": 4 },
+    "s":   { "value": 6 },
+    "sm":  { "value": 10 },
+    "m":   { "value": 12 },
+    "l":   { "value": 16 },
+    "xl":  { "value": 24 },
+    "xxl": { "value": 32 },
+    "contentPadding": { "value": 20, "comment": "horizontal screen padding" },
+    "sectionSpacing": { "value": 20, "comment": "vertical gap between sections" },
+    "inputHeight":    { "value": 54 },
+    "tabBarHeight":   { "value": 74 },
+    "maxContentWidth":{ "value": 860, "comment": "desktop/web" }
+  },
+
+  "borderRadius": {
+    "sm":   { "value": 8 },
+    "md":   { "value": 12, "comment": "inputs, default cards" },
+    "lg":   { "value": 16, "comment": "buttons, FAB" },
+    "xl":   { "value": 20 },
+    "2xl":  { "value": 22, "comment": "section cards" },
+    "3xl":  { "value": 26, "comment": "hero cards" },
+    "full": { "value": 9999, "comment": "chips, badges, pills" }
+  },
+
+  "shadow": {
+    "sm": {
+      "light": { "value": "0px 4px 16px rgba(0,0,0,0.06), 0px 1px 4px rgba(78,73,242,0.07)" },
+      "dark":  { "value": "0px 6px 18px rgba(0,0,0,0.24)" }
+    },
+    "md": {
+      "light": { "value": "0px 8px 28px rgba(0,0,0,0.07), 0px 2px 8px rgba(52,202,232,0.08)" },
+      "dark":  { "value": "0px 10px 30px rgba(0,0,0,0.42), 0px 0px 0px 1px rgba(255,255,255,0.03)" }
+    },
+    "lg": {
+      "light": { "value": "0px 12px 40px rgba(0,0,0,0.15)" },
+      "dark":  { "value": "0px 16px 48px rgba(0,0,0,0.52)" }
+    },
+    "brand":   { "value": "0px 6px 18px rgba(79,70,229,0.36)" },
+    "success": { "value": "0px 8px 20px rgba(16,185,129,0.34)" }
+  },
+
+  "component": {
+    "button": {
+      "variants": ["gradient", "primary", "secondary", "ghost", "danger", "success", "warning"],
+      "sizes": {
+        "sm": { "height": 44, "fontSize": 13, "paddingH": 14 },
+        "md": { "height": 52, "fontSize": 15, "paddingH": 20 },
+        "lg": { "height": 58, "fontSize": 16, "paddingH": 26 }
+      },
+      "pressAnimation": { "toValue": 0.965, "speed": 50, "bounciness": 0 },
+      "releaseAnimation": { "toValue": 1, "speed": 22, "bounciness": 4 }
+    },
+    "card": {
+      "pressAnimation": { "toValue": 0.97, "speed": 50, "bounciness": 0 }
+    },
+    "input": {
+      "height": 54,
+      "borderRadius": 12,
+      "focusBorderWidth": 2,
+      "errorBorderWidth": 1.5
+    },
+    "badge": {
+      "variants": ["success", "warning", "danger", "info", "neutral"],
+      "sizes": {
+        "sm": { "paddingH": 8,  "paddingV": 4, "fontSize": 11 },
+        "md": { "paddingH": 12, "paddingV": 6, "fontSize": 12 },
+        "lg": { "paddingH": 14, "paddingV": 8, "fontSize": 13 }
+      }
+    }
+  },
+
+  "icon": {
+    "libraries": ["Ionicons", "FontAwesome5", "MaterialIcons", "MaterialCommunityIcons"],
+    "sizes": {
+      "xs": 16, "sm": 18, "md": 20, "lg": 24, "xl": 32
+    }
+  },
+
+  "copy": {
+    "language": "Romanian",
+    "tone": "direct, motivational, informal",
+    "person": "second (Tu/Ești)",
+    "numberFormat": "dot thousands separator (1.500 RON)",
+    "emojiUsage": "only in motivational messages and rank indicators",
+    "casing": {
+      "sectionHeaders": "Title Case",
+      "labels": "ALL CAPS with letterSpacing",
+      "bodyAndErrors": "Sentence case"
+    }
+  }
+}

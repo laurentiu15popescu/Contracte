@@ -42,7 +42,7 @@ const greetingByHour = () => {
   return "Bună seara";
 };
 
-export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, onGoReports }) {
+export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, onGoReports, onShowBlankTemplate }) {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [evenimente, setEvenimente] = useState([]);
@@ -194,7 +194,7 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
       {/* KPI */}
       <div className="dash-kpis">
         <Kpi
-          color="#6366F1"
+          color="#3B5BDB"
           icon="📄"
           title="Contracte totale"
           value={fmt(stats.contracts)}
@@ -210,7 +210,7 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
           trend={{ kind: "up", text: "+ activ" }}
         />
         <Kpi
-          color="#34CAE8"
+          color="#6F86E8"
           icon="📅"
           title="Luna curentă"
           value={fmt(stats.monthValue)}
@@ -230,8 +230,9 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
       {/* Quick actions */}
       <div className="section-cap">Acțiuni Rapide</div>
       <div className="qa-grid">
-        <QA color="#6366F1" icon="＋" label="Contract nou" desc="Pornește un contract gol" onClick={onNewContract} />
-        <QA color="#34CAE8" icon="📁" label="Bibliotecă" desc="Răsfoiește contractele salvate" onClick={() => onGoLibrary?.("contracte")} />
+        <QA color="#3B5BDB" icon="＋" label="Contract nou" desc="Pornește un contract gol" onClick={onNewContract} />
+        <QA color="#0EA5E9" icon="📄" label="Model contract (blank)" desc="PDF clauze fără date — pre-acord client" onClick={() => onShowBlankTemplate?.()} />
+        <QA color="#6F86E8" icon="📁" label="Bibliotecă" desc="Răsfoiește contractele salvate" onClick={() => onGoLibrary?.("contracte")} />
         <QA color="#10B981" icon="👥" label="Clienți" desc="Vezi istoricul beneficiarilor" onClick={() => onGoLibrary?.("clienti")} />
         <QA color="#F59E0B" icon="📊" label="Rapoarte" desc="Analiză venituri lunare" onClick={() => onGoReports?.()} />
       </div>
@@ -353,7 +354,7 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
             ) : (
               stats.upcoming.map((e) => (
                 <div key={`${e.numarContract}-${e.anexaIndex}`} className="row" onClick={() => onOpenContract?.(e.numarContract)}>
-                  <div className="row-avatar" style={{ background: "linear-gradient(135deg,#34CAE8,#6366F1)" }}>
+                  <div className="row-avatar" style={{ background: "linear-gradient(135deg,#6F86E8,#3B5BDB)" }}>
                     {String(e._d.getDate()).padStart(2, "0")}
                   </div>
                   <div className="row-main">

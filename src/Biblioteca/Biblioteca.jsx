@@ -4,8 +4,11 @@ import { db } from "../shared/firebase";
 import { getStatusMapByNumar, setContractStatusByNumar } from "../shared/db";
 import Contracte from "./Contracte";
 import Clienti from "./Clienti";
+import Modele from "./Modele";
+import { useDialog } from "../shared/Dialog";
 
-export default function Biblioteca({ onOpen, tab: tabProp, onTabChange }) {
+export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseModel, onOpenBlank }) {
+  const { alert, confirm } = useDialog();
   const [tabLocal, setTabLocal] = useState("contracte");
   const tab = tabProp ?? tabLocal;
   const setTab = onTabChange ?? setTabLocal;
@@ -41,7 +44,7 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange }) {
   useEffect(() => { refresh(); }, [refresh]);
 
   const handleDeleteContract = async (nr) => {
-    if (!confirm(`Ștergi contractul nr. ${nr} și toate anexele lui din Firestore?`)) return;
+    if (!(await confirm(`Ștergi contractul nr. ${nr} și toate anexele lui din Firestore?`, { variant: "danger", confirmLabel: "Șterge" }))) return;
     try {
       await deleteDoc(doc(db, "users", nr));
       for (const col of ["evenimente", "incasari"]) {
@@ -50,7 +53,7 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange }) {
       }
       refresh();
     } catch (err) {
-      alert("Eroare la ștergere: " + err.message);
+      await alert("Eroare la ștergere: " + err.message, { variant: "danger" });
     }
   };
 
@@ -58,12 +61,12 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange }) {
     try {
       const n = await setContractStatusByNumar(nr, status);
       if (!n) {
-        alert("Contractul nu există local (în Dexie). Deschide-l și salvează-l mai întâi.");
+        await alert("Contractul nu există local (în Dexie). Deschide-l și salvează-l mai întâi.", { variant: "warning" });
         return;
       }
       setStatusMap((m) => ({ ...m, [nr]: status }));
     } catch (err) {
-      alert("Eroare la schimbarea statusului: " + err.message);
+      await alert("Eroare la schimbarea statusului: " + err.message, { variant: "danger" });
     }
   };
 
@@ -105,6 +108,8 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange }) {
             onOpen={onOpen}
           />
         )}
+
+        {tab === "modele" && <Modele onUseModel={onUseModel} onOpenBlank={onOpenBlank} />}
       </div>
     </section>
   );

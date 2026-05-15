@@ -1,3 +1,6 @@
+// Prefix proxy pentru web hostat (Cloudflare Worker). Gol în dev/desktop.
+const PROXY = import.meta.env.VITE_PROXY_BASE || "";
+
 export const DATE_RE = /^(\d{2})-(\d{2})-(\d{4})$/;
 
 export const todayDmy = () => {
@@ -31,6 +34,16 @@ export const addDays = (dmy, n) => {
   const d = parseDmy(dmy);
   if (!d) return "";
   d.setDate(d.getDate() + Number(n));
+  return formatDmy(d);
+};
+
+export const addMonths = (dmy, n) => {
+  const d = parseDmy(dmy);
+  if (!d) return "";
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + Number(n));
+  // dacă ziua a sărit (ex. 31 ian + 1 lună), revino la ultima zi a lunii dorite
+  if (d.getDate() !== day) d.setDate(0);
   return formatDmy(d);
 };
 
@@ -294,8 +307,8 @@ export const fetchAnaf = async (cui) => {
   if (!/^\d{2,10}$/.test(clean)) throw new Error("CUI invalid");
   const today = new Date().toISOString().slice(0, 10);
   const paths = [
-    "/anaf/api/PlatitorTvaRest/v9/tva",
-    "/anaf/api/PlatitorTvaRest/v8/tva",
+    `${PROXY}/anaf/api/PlatitorTvaRest/v9/tva`,
+    `${PROXY}/anaf/api/PlatitorTvaRest/v8/tva`,
   ];
   let res;
   let json;
@@ -348,7 +361,9 @@ export const fetchBnrRate = async (currency, dmyDate) => {
   const fetchFor = async (date) => {
     const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     const isToday = date.getTime() === today.getTime();
-    const url = isToday ? "/cursbnr/curs-bnr-azi" : `/cursbnr/arhiva-curs-bnr-${iso}`;
+    const url = isToday
+      ? `${PROXY}/cursbnr/curs-bnr-azi`
+      : `${PROXY}/cursbnr/arhiva-curs-bnr-${iso}`;
     return fetch(url);
   };
 

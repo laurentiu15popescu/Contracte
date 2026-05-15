@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F0F4F8; padding: 20px; }
+  .section { margin-bottom: 18px; }
+  .label { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #737373; margin-bottom: 10px; }
+  .spacing-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+  .token { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .block { background: #6366F1; border-radius: 4px; width: 100%; }
+  .token-name { font-size: 9px; font-weight: 800; color: #737373; text-align: center; }
+  .token-val { font-size: 9px; color: #A3A3A3; text-align: center; }
+  .radius-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .radius-box { width: 56px; height: 40px; background: #6366F1; opacity: 0.7; }
+  .r-label { font-size: 9px; font-weight: 800; color: #737373; text-align: center; margin-top: 4px; }
+  .r-val { font-size: 9px; color: #A3A3A3; text-align: center; }
+  .r-token { display: flex; flex-direction: column; align-items: center; }
+</style>
+</head>
+<body>
+  <div class="section">
+    <div class="label">Spacing Scale</div>
+    <div class="spacing-grid">
+      <div class="token">
+        <div class="block" style="width:4px; height:4px; border-radius:2px"></div>
+        <div class="token-name">xs</div><div class="token-val">4px</div>
+      </div>
+      <div class="token">
+        <div class="block" style="width:6px; height:6px; border-radius:2px"></div>
+        <div class="token-name">s</div><div class="token-val">6px</div>
+      </div>
+      <div class="token">
+        <div class="block" style="width:10px; height:10px; border-radius:2px"></div>
+        <div class="token-name">sm</div><div class="token-val">10px</div>
+      </div>
+      <div class="token">
+        <div class="block" style="width:12px; height:12px; border-radius:2px"></div>
+        <div class="token-name">m</div><div class="token-val">12px</div>
+      </div>
+      <div class="token">
+        <div class="block" style="width:16px; height:16px; border-radius:2px"></div>
+        <div class="token-name">l</div><div class="token-val">16px</div>
+      </div>
+      <div class="token">
+        <div class="block" style="width:24px; height:24px; border-radius:2px"></div>
+        <div class="token-name">xl</div><div class="token-val">24px</div>
+      </div>
+      <div class="token">
+        <div class="block" style="width:32px; height:32px; border-radius:2px"></div>
+        <div class="token-name">xxl</div><div class="token-val">32px</div>
+      </div>
+      <div class="token">
+        <div class="block" style="width:20px; height:48px; border-radius:2px; background:#34CAE8;"></div>
+        <div class="token-name">content</div><div class="token-val">20px</div>
+      </div>
+      <div class="token">
+        <div class="block" style="width:20px; height:48px; border-radius:2px; background:#34CAE8; opacity:0.6;"></div>
+        <div class="token-name">section</div><div class="token-val">20px</div>
+      </div>
+      <div class="token">
+        <div class="block" style="width:54px; height:22px; border-radius:3px; background:#10B981;"></div>
+        <div class="token-name">input h</div><div class="token-val">54px</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Border Radius</div>
+    <div class="radius-row">
+      <div class="r-token"><div class="radius-box" style="border-radius:8px"></div><div class="r-label">sm</div><div class="r-val">8px</div></div>
+      <div class="r-token"><div class="radius-box" style="border-radius:12px"></div><div class="r-label">md</div><div class="r-val">12px</div></div>
+      <div class="r-token"><div class="radius-box" style="border-radius:16px"></div><div class="r-label">lg</div><div class="r-val">16px</div></div>
+      <div class="r-token"><div class="radius-box" style="border-radius:20px"></div><div class="r-label">xl</div><div class="r-val">20px</div></div>
+      <div class="r-token"><div class="radius-box" style="border-radius:22px"></div><div class="r-label">2xl</div><div class="r-val">22px</div></div>
+      <div class="r-token"><div class="radius-box" style="border-radius:26px"></div><div class="r-label">3xl</div><div class="r-val">26px</div></div>
+      <div class="r-token"><div class="radius-box" style="border-radius:9999px; width:56px; height:28px;"></div><div class="r-label">full</div><div class="r-val">9999px</div></div>
+    </div>
+  </div>
+</body>
+</html>

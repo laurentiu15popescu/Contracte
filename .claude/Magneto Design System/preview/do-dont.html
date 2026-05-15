@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F0F4F8; padding: 20px; }
+  .grid { display: flex; flex-direction: column; gap: 16px; }
+  .rule { display: flex; gap: 12px; }
+  .side { flex: 1; border-radius: 14px; padding: 14px; }
+  .do   { background: #ECFDF5; border: 1px solid #10B98130; }
+  .dont { background: #FEF2F2; border: 1px solid #EF444430; }
+  .side-label { font-size: 9px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
+  .do   .side-label { color: #047857; }
+  .dont .side-label { color: #B91C1C; }
+  .example { font-size: 12px; font-weight: 700; line-height: 1.5; }
+  .do   .example { color: #065F46; }
+  .dont .example { color: #991B1B; }
+  .sub { font-size: 10px; font-weight: 600; margin-top: 5px; line-height: 1.4; }
+  .do   .sub { color: #047857; opacity: 0.8; }
+  .dont .sub { color: #B91C1C; opacity: 0.8; }
+  .category { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: #737373; margin-bottom: 8px; margin-top: 4px; }
+
+  /* Color swatch demos */
+  .swatch-row { display: flex; gap: 6px; margin-top: 6px; }
+  .sw { width: 28px; height: 28px; border-radius: 6px; }
+  .code { font-family: monospace; font-size: 10px; background: rgba(0,0,0,0.06); padding: 2px 5px; border-radius: 4px; margin-top: 4px; display: inline-block; }
+
+  /* Button demos */
+  .btn-demo { display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; height: 40px; border-radius: 16px; font-family: inherit; font-size: 13px; font-weight: 800; border: 1px solid transparent; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="grid">
+
+  <!-- COLORS -->
+  <div class="category">Culori</div>
+  <div class="rule">
+    <div class="side do">
+      <div class="side-label">✓ DO</div>
+      <div class="example">theme.colors.brand</div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#6366F1"></div>
+        <div class="sw" style="background:#10B981"></div>
+        <div class="sw" style="background:#EF4444"></div>
+        <div class="sw" style="background:#F59E0B"></div>
+      </div>
+      <div class="sub">Folosește întotdeauna tokenuri din theme.colors.*</div>
+    </div>
+    <div class="side dont">
+      <div class="side-label">✗ DON'T</div>
+      <div class="example">color: '#6366F1'</div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#000"></div>
+        <div class="sw" style="background:#fff; border:1px solid #eee"></div>
+        <div class="sw" style="background:#333"></div>
+      </div>
+      <div class="sub">Nu hardcoda culori. Nu folosi #000 sau #FFF ca bg.</div>
+    </div>
+  </div>
+
+  <!-- BACKGROUNDS -->
+  <div class="rule">
+    <div class="side do">
+      <div class="side-label">✓ DO</div>
+      <div class="example">bg: #F0F4F8 (light)<br/>bg: #0F1626 (dark)</div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#F0F4F8; border:1px solid #E8E8E8"></div>
+        <div class="sw" style="background:#0F1626"></div>
+      </div>
+      <div class="sub">Fundal albastru-gri (light) sau navy adânc (dark)</div>
+    </div>
+    <div class="side dont">
+      <div class="side-label">✗ DON'T</div>
+      <div class="example">bg: #FFFFFF sau #000000</div>
+      <div class="swatch-row">
+        <div class="sw" style="background:#FFFFFF; border:1px solid #eee"></div>
+        <div class="sw" style="background:#000000"></div>
+        <div class="sw" style="background:linear-gradient(135deg,#667eea,#764ba2)"></div>
+      </div>
+      <div class="sub">Nu alb pur, nu negru pur, nu gradienti pe ecrane normale</div>
+    </div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div class="category">Tipografie</div>
+  <div class="rule">
+    <div class="side do">
+      <div class="side-label">✓ DO</div>
+      <div class="example" style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px">ACȚIUNI RAPIDE</div>
+      <div class="example" style="font-size:14px; font-weight:900; margin-top:4px">1.850 RON</div>
+      <div class="sub">Ierarhie prin font-weight (900→400). Label = CAPS + letterSpacing.</div>
+    </div>
+    <div class="side dont">
+      <div class="side-label">✗ DON'T</div>
+      <div class="example" style="font-size:16px; font-style:italic">Acțiuni Rapide</div>
+      <div class="example" style="font-size:11px; margin-top:4px">1850 RON</div>
+      <div class="sub">Nu italic în UI. Nu px direct (folosește scaleFont). Numere: 1.850 RON</div>
+    </div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="category">Butoane</div>
+  <div class="rule">
+    <div class="side do">
+      <div class="side-label">✓ DO</div>
+      <div class="btn-demo" style="background:linear-gradient(to right,#6366F1,#4F46E5);color:#fff;box-shadow:0 6px 18px rgba(79,70,229,0.36)">Conectare →</div>
+      <div class="sub">Gradient pentru CTA principal. Border-radius 16px. Shadow colorat.</div>
+    </div>
+    <div class="side dont">
+      <div class="side-label">✗ DON'T</div>
+      <div class="btn-demo" style="background:#6366F1;color:#fff;border-radius:4px;border-left:4px solid #34CAE8">Conectare</div>
+      <div class="sub">Nu border-radius mic. Nu accent-border stânga pe butoane. Nu text ALL CAPS pe butoane.</div>
+    </div>
+  </div>
+
+  <!-- COPY -->
+  <div class="category">Copy (Limbaj)</div>
+  <div class="rule">
+    <div class="side do">
+      <div class="side-label">✓ DO</div>
+      <div class="example">"Introdu o sumă validă."<br/>"Încasarea a fost salvată."<br/>"Bună dimineața, Alex!"</div>
+      <div class="sub">Română. Sentence case pentru erori. Al doilea persoană. 1.500 RON.</div>
+    </div>
+    <div class="side dont">
+      <div class="side-label">✗ DON'T</div>
+      <div class="example">"EROARE: Invalid amount"<br/>"Please enter a value 🚨"<br/>"1500 RON"</div>
+      <div class="sub">Nu engleză. Nu emoji în erori/labels. Nu punct ca separator mii în altă formă.</div>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="category">Carduri</div>
+  <div class="rule">
+    <div class="side do">
+      <div class="side-label">✓ DO</div>
+      <div style="background:#fff;border-radius:22px;padding:14px;border:1px solid #E8E8E8;box-shadow:0 4px 16px rgba(0,0,0,0.06);margin-top:4px">
+        <div style="font-size:10px;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:#A3A3A3">TITLU SECȚIUNE</div>
+        <div style="font-size:15px;font-weight:900;color:#1A1A1A;margin-top:4px">Conținut card</div>
+      </div>
+      <div class="sub">Border-radius 12–26px. Shadow subtil. Border 1px.</div>
+    </div>
+    <div class="side dont">
+      <div class="side-label">✗ DON'T</div>
+      <div style="background:#fff;border-radius:4px;padding:14px;border-left:4px solid #6366F1;box-shadow:0 0 0 rgba(0,0,0,0);margin-top:4px">
+        <div style="font-size:10px;font-weight:800;color:#A3A3A3">Titlu</div>
+        <div style="font-size:15px;font-weight:900;color:#1A1A1A;margin-top:4px">Conținut</div>
+      </div>
+      <div class="sub">Nu border-left accent. Nu radius mic. Nu carduri fără shadow deloc.</div>
+    </div>
+  </div>
+
+  <!-- ICONS -->
+  <div class="category">Iconografie</div>
+  <div class="rule">
+    <div class="side do">
+      <div class="side-label">✓ DO</div>
+      <div class="example">Ionicons / FontAwesome5 / MaterialIcons</div>
+      <div class="sub">Iconuri din @expo/vector-icons. Culoare = context semantic. Mărime: 16–32px.</div>
+    </div>
+    <div class="side dont">
+      <div class="side-label">✗ DON'T</div>
+      <div class="example">SVG custom inline · PNG icons · Emoji ca icoane</div>
+      <div class="sub">Nu SVG manual în UI. Nu emoji în locul iconurilor. Nu iconuri de altă bibliotecă.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
