@@ -30,3 +30,6 @@ release
 # Local env (Firebase keys, secrets)
 .env.local
 .env.*.local
+
+# Firebase CLI local cache (keep .firebaserc / firebase.json tracked)
+.firebase/
