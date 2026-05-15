@@ -1,5 +1,7 @@
 // Prefix proxy pentru web hostat (Cloudflare Worker). Gol în dev/desktop.
 const PROXY = import.meta.env.VITE_PROXY_BASE || "";
+const PROXY_TOKEN = import.meta.env.VITE_PROXY_TOKEN || "";
+const proxyHeaders = PROXY && PROXY_TOKEN ? { "X-Proxy-Token": PROXY_TOKEN } : {};
 
 export const DATE_RE = /^(\d{2})-(\d{2})-(\d{4})$/;
 
@@ -316,7 +318,7 @@ export const fetchAnaf = async (cui) => {
   for (const url of paths) {
     res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...proxyHeaders },
       body: JSON.stringify([{ cui: Number(clean), data: today }]),
     });
     lastStatus = res.status;
@@ -364,7 +366,7 @@ export const fetchBnrRate = async (currency, dmyDate) => {
     const url = isToday
       ? `${PROXY}/cursbnr/curs-bnr-azi`
       : `${PROXY}/cursbnr/arhiva-curs-bnr-${iso}`;
-    return fetch(url);
+    return fetch(url, { headers: proxyHeaders });
   };
 
   // încearcă data cerută; dacă 404 (weekend/sărbătoare), dă înapoi până 7 zile
