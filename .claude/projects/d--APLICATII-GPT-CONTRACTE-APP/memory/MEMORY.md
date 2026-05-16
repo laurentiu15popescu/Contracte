@@ -1,1 +1,2 @@
 - [User: frontend/UI-UX specialist](user-frontend-uiux.md) — communicate at peer level, technical, concise
+- [Firestore rules: manual deploy](firestore-rules-manual-deploy.md) — never add a rules step to CI; remind user to run firebase deploy --only firestore:rules

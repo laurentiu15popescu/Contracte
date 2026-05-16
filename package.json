@@ -1,7 +1,7 @@
 {
   "name": "contracte-app",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -15,11 +15,12 @@
     "electron:build:mac": "npm run build && electron-builder --mac"
   },
   "dependencies": {
-    "electron-updater": "^6.3.9",
+    "@sentry/react": "^8.55.2",
     "@turbodocx/html-to-docx": "^1.20.1",
     "buffer": "^6.0.3",
     "dexie": "^4.4.2",
     "docx": "^9.6.1",
+    "electron-updater": "^6.3.9",
     "firebase": "^12.13.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",

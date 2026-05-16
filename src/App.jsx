@@ -27,7 +27,7 @@ import {
   validateCUI,
   validateIBAN,
 } from "./shared/utils";
-import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel } from "./shared/db";
+import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, subscribeDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel } from "./shared/db";
 import { extractFromDocx } from "./Sistem/importDocx";
 import { db } from "./shared/firebase";
 import { LogoutButton } from "./shared/AuthGate";
@@ -139,10 +139,29 @@ function App() {
     saveLocal({ clientData, anexe });
   }, [clientData, anexe]);
 
+  // Avertizare la închiderea ferestrei dacă există modificări nesalvate
+  const liveSnapRef = useRef("");
+  liveSnapRef.current = JSON.stringify({ c: clientData, a: anexe });
+  const savedSnapRef = useRef(null);
+  // baseline „salvat” = starea la încărcare sau după schimbarea contractului curent
   useEffect(() => {
-    if (step === "hub-flux") {
-      listDrafturi().then(setDrafturi).catch(() => setDrafturi([]));
-    }
+    savedSnapRef.current = liveSnapRef.current;
+  }, [currentContractId]);
+  useEffect(() => {
+    const h = (e) => {
+      if (savedSnapRef.current !== null && liveSnapRef.current !== savedSnapRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, []);
+
+  useEffect(() => {
+    if (step !== "hub-flux") return;
+    const unsub = subscribeDrafturi(setDrafturi);
+    return unsub;
   }, [step]);
 
   // Auto-completează numărul contractului la prima încărcare dacă lipsește
@@ -211,8 +230,11 @@ function App() {
 
     if (localOk || cloudOk) {
       const n = getNextContractNumber();
-      setClientData({ ...emptyClient(), numarContract: n });
-      setAnexe([emptyAnexa()]);
+      const freshClient = { ...emptyClient(), numarContract: n };
+      const freshAnexe = [emptyAnexa()];
+      savedSnapRef.current = JSON.stringify({ c: freshClient, a: freshAnexe });
+      setClientData(freshClient);
+      setAnexe(freshAnexe);
       setCurrentContractId(null);
       setStep("hub-flux");
     }
@@ -473,6 +495,26 @@ function App() {
       pdf.addImage(img, "JPEG", (pageW - w) / 2, 0, w, h, undefined, "FAST");
     }
     return pdf.output("blob");
+  };
+
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const downloadPdf = async () => {
+    const fileName = `Contract_${(clientData.numarContract || "fara-numar").toString().replace(/[^\w.-]+/g, "_")}.pdf`;
+    setPdfBusy(true);
+    try {
+      const blob = await generateContractPdfBlob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
+    } catch (e) {
+      await alert("Nu am putut genera PDF-ul: " + (e?.message || e), { variant: "danger" });
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   const sendEmail = async () => {
@@ -890,6 +932,9 @@ function App() {
               {editMode ? "Ieși din editare" : "Editare inline"}
             </button>
             <button className="back-btn" onClick={exportDocx}>Export Word</button>
+            <button className="back-btn" onClick={downloadPdf} disabled={pdfBusy}>
+              {pdfBusy ? "Se generează…" : "⬇ Descarcă PDF"}
+            </button>
             <button className="back-btn" onClick={sendEmail}>Trimite email</button>
             {blankPreview && (
               <button className="back-btn" onClick={handleSaveAsModel} title="Salvează acest model editat pentru un client">

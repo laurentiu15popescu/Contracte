@@ -1,7 +1,7 @@
 import { db as fdb } from "./firebase";
 import {
   collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
-  query, where,
+  query, where, onSnapshot,
 } from "firebase/firestore";
 
 // FNV-1a 32-bit — hash stabil pentru deduplicare clauze
@@ -108,9 +108,23 @@ export const listDrafturi = async () => {
   const snap = await getDocs(collection(fdb, "drafturi"));
   return snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    .filter((c) => (c.status || "draft") === "draft")
+    .filter((c) => !c.deleted && (c.status || "draft") === "draft")
     .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
 };
+
+// Abonare în timp real la lista de drafturi (returnează funcția de dezabonare)
+export const subscribeDrafturi = (cb) =>
+  onSnapshot(
+    collection(fdb, "drafturi"),
+    (snap) => {
+      const list = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((c) => !c.deleted && (c.status || "draft") === "draft")
+        .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+      cb(list);
+    },
+    () => {} // eroare/permisiuni: păstrează ultima listă cunoscută
+  );
 
 export const STATUS_STEPS = ["draft", "trimis", "semnat", "finalizat"];
 
@@ -151,6 +165,7 @@ export const listContracte = async (search = "") => {
   const snap = await getDocs(collection(fdb, "drafturi"));
   const all = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((c) => !c.deleted)
     .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
   if (!search) return all;
   const q = search.toLowerCase();
@@ -174,7 +189,18 @@ export const getContractByNumar = async (nr) => {
   return { id: d.id, ...d.data() };
 };
 
-export const deleteContract = (id) => deleteDoc(doc(fdb, "drafturi", String(id)));
+// soft-delete: marchează "deleted" (recuperabil), nu șterge definitiv
+export const deleteContract = (id) =>
+  updateDoc(doc(fdb, "drafturi", String(id)), {
+    deleted: true,
+    deletedAt: new Date().toISOString(),
+  });
+
+export const restoreContract = (id) =>
+  updateDoc(doc(fdb, "drafturi", String(id)), { deleted: false, deletedAt: null });
+
+// ștergere definitivă (folosită doar explicit, ex. golire coș)
+export const purgeContract = (id) => deleteDoc(doc(fdb, "drafturi", String(id)));
 
 export const exportAll = async () => {
   const snap = await getDocs(collection(fdb, "drafturi"));

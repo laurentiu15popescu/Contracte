@@ -1,6 +1,10 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const firebaseConfig = {
@@ -14,7 +18,16 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+// cache local persistent → datele rămân disponibile offline și se sincronizează automat
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  });
+} catch {
+  db = initializeFirestore(app, {});
+}
+export { db };
 export const auth = getAuth(app);
 // sesiune păstrată pe device (persistență locală, reîmprospătată automat)
 setPersistence(auth, browserLocalPersistence).catch(() => {});
