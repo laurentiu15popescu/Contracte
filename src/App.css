@@ -1307,6 +1307,26 @@ tfoot.print-footer { display: table-footer-group; }
   .section-row { flex-wrap: wrap; }
 }
 
+/* Preview contract pe mobil — DOAR pe ecran (nu la print, unde A4 rămâne intact).
+   "screen" izolează aceste reguli de @media print. */
+@media screen and (max-width: 860px) {
+  .preview-container { padding: 12px; }
+  .preview-container .print-controls > div {
+    margin-left: 0 !important;
+    flex-wrap: wrap;
+  }
+  .preview-container .print-controls,
+  .preview-container .print-controls > div {
+    width: 100%;
+  }
+  .preview-container .document-page {
+    width: 100%;
+    min-height: 0;
+    padding: 10mm 7mm;
+  }
+  .preview-container .document-page img { max-width: 100%; }
+}
+
 @media (max-width: 480px) {
   .topbar { padding: 10px 12px; }
   .content { padding: 16px 12px 32px; }
