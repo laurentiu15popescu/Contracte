@@ -1237,7 +1237,9 @@ tfoot.print-footer { display: table-footer-group; }
   /* o singură coloană; sidebar devine drawer off-canvas */
   .app-container { grid-template-columns: 1fr; }
 
-  .app-sidebar {
+  /* specificitate 0,2,0 — bate mereu regula de bază .app-sidebar (0,1,0),
+     indiferent de ordinea în bundle după minificare */
+  .app-container .app-sidebar {
     position: fixed;
     top: 0;
     left: 0;
@@ -1253,15 +1255,22 @@ tfoot.print-footer { display: table-footer-group; }
   }
   .app-container.menu-open .app-sidebar { transform: translateX(0); }
 
-  .sidebar-backdrop {
+  .app-container .sidebar-backdrop {
+    display: block;
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
     z-index: 55;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
   }
-  .app-container.menu-open .sidebar-backdrop { display: block; }
+  .app-container.menu-open .sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
 
-  .hamburger {
+  .topbar .hamburger {
     display: flex;
     flex-direction: column;
     justify-content: center;
