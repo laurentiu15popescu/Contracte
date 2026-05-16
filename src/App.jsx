@@ -404,12 +404,17 @@ function App() {
 
   const autoFetchAnaf = async () => {
     if (!clientData.cui || !validateCUI(clientData.cui)) return;
-    try {
-      const d = await fetchAnaf(clientData.cui);
-      setClientData((prev) => ({ ...prev, ...d }));
-      setAnafSyncAt(new Date());
-    } catch (e) {
-      console.warn("ANAF:", e.message);
+    // ANAF are doar firme (CUI 2-10 cifre); pentru CNP (persoană fizică) se sare peste.
+    const cleanCui = String(clientData.cui).replace(/^RO/i, "").trim();
+    const isCompanyCui = /^\d{2,10}$/.test(cleanCui);
+    if (isCompanyCui) {
+      try {
+        const d = await fetchAnaf(clientData.cui);
+        setClientData((prev) => ({ ...prev, ...d }));
+        setAnafSyncAt(new Date());
+      } catch (e) {
+        console.warn("ANAF:", e.message);
+      }
     }
     try {
       const modele = await getModeleByCui(clientData.cui);
