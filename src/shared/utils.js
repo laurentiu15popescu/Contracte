@@ -67,10 +67,28 @@ export const normalizeDate = (s) => {
   return `${dd}-${mm}-${yyyy}`;
 };
 
+// CNP românesc: 13 cifre, cifră de control + verificare lună/zi.
+export const validateCNP = (s) => {
+  const v = String(s || "").trim();
+  if (!/^\d{13}$/.test(v)) return false;
+  const d = v.split("").map(Number);
+  if (d[0] < 1 || d[0] > 9) return false; // cifra sex/secol: 1..9
+  const luna = d[3] * 10 + d[4];
+  if (luna < 1 || luna > 12) return false;
+  const zi = d[5] * 10 + d[6];
+  if (zi < 1 || zi > 31) return false;
+  const w = [2, 7, 9, 1, 4, 6, 3, 5, 8, 2, 7, 9];
+  let sum = 0;
+  for (let i = 0; i < 12; i++) sum += d[i] * w[i];
+  let c = sum % 11;
+  if (c === 10) c = 1;
+  return c === d[12];
+};
+
 export const validateCUI = (s) => {
   if (!s) return false;
   const v = s.replace(/^RO/i, "").trim();
-  if (/^\d{13}$/.test(s)) return true; // CNP
+  if (/^\d{13}$/.test(v)) return validateCNP(v); // CNP — validare reală
   if (!/^\d{2,10}$/.test(v)) return false;
   const digits = v.split("").map(Number);
   const control = digits.pop();
