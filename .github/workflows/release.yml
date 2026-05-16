@@ -12,6 +12,8 @@ jobs:
   release:
     strategy:
       fail-fast: false
+      # serial: evită race-ul de publicare electron-builder pe același GitHub Release
+      max-parallel: 1
       matrix:
         os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
