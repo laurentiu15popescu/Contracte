@@ -1,26 +1,8 @@
-import Dexie from "dexie";
 import { db as fdb } from "./firebase";
 import {
-  collection, getDocs, doc, getDoc, setDoc, deleteDoc,
-  query, where, orderBy,
+  collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
+  query, where,
 } from "firebase/firestore";
-
-export const db = new Dexie("AlumaContracte");
-
-db.version(1).stores({
-  contracte: "++id, numarContract, dataContract, cui, numeBeneficiar, updatedAt",
-});
-db.version(2).stores({
-  contracte: "++id, numarContract, dataContract, cui, numeBeneficiar, updatedAt, status",
-}).upgrade((tx) =>
-  tx.table("contracte").toCollection().modify((c) => {
-    if (!c.status) c.status = "draft";
-  })
-);
-db.version(3).stores({
-  contracte: "++id, numarContract, dataContract, cui, numeBeneficiar, updatedAt, status",
-  modele: "++id, cui, hash, updatedAt",
-});
 
 // FNV-1a 32-bit — hash stabil pentru deduplicare clauze
 export const hashClauze = (clauzeCustom) => {
@@ -33,8 +15,7 @@ export const hashClauze = (clauzeCustom) => {
   return h.toString(16).padStart(8, "0");
 };
 
-// ---- Modele: stocate în Firestore (colecția "modele"), nu se pierd la schimbarea device-ului.
-// Cheia documentului = hash-ul clauzelor → deduplicare naturală.
+// ---- Modele: Firestore ("modele"), cheia = hash-ul clauzelor (deduplicare).
 export const saveModel = async ({ cui, numeBeneficiar, clauzeCustom, defaultEvent, defaultBudget }) => {
   const hash = hashClauze(clauzeCustom);
   const ref = doc(fdb, "modele", hash);
@@ -55,8 +36,10 @@ export const saveModel = async ({ cui, numeBeneficiar, clauzeCustom, defaultEven
 };
 
 export const listModele = async () => {
-  const snap = await getDocs(query(collection(fdb, "modele"), orderBy("updatedAt", "desc")));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const snap = await getDocs(collection(fdb, "modele"));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
 };
 
 export const getModeleByCui = async (cui) => {
@@ -79,6 +62,7 @@ const sumBudget = (b) =>
   (Number(b?.cazare) || 0) +
   (Number(b?.alteCheltuieli) || 0);
 
+// ---- Drafturi/contracte: Firestore ("drafturi") — accesibile de pe orice device.
 export const saveContract = async ({ clientData, anexe, id }) => {
   const now = new Date().toISOString();
   const total = (anexe || []).reduce((s, a) => s + sumBudget(a.budgetData), 0);
@@ -93,33 +77,44 @@ export const saveContract = async ({ clientData, anexe, id }) => {
     updatedAt: now,
   };
   if (id) {
-    await db.contracte.update(id, record);
+    await updateDoc(doc(fdb, "drafturi", String(id)), record);
     return id;
   }
-  return await db.contracte.add({ ...record, createdAt: now, status: "draft" });
+  const ref = await addDoc(collection(fdb, "drafturi"), {
+    ...record,
+    createdAt: now,
+    status: "draft",
+  });
+  return ref.id;
 };
 
-// Statusul "trimis" se scrie și în cloud (după numărul contractului), nu doar local.
+// Statusul "trimis" se scrie pe draft și în "statusContracte/{numarContract}".
 export const markContractTrimis = async (id) => {
   const now = new Date().toISOString();
-  const rec = await db.contracte.get(id);
-  await db.contracte.update(id, { status: "trimis", updatedAt: now });
-  if (rec?.numarContract) {
+  const ref = doc(fdb, "drafturi", String(id));
+  const snap = await getDoc(ref);
+  await updateDoc(ref, { status: "trimis", updatedAt: now });
+  const nr = snap.exists() ? snap.data()?.numarContract : null;
+  if (nr) {
     await setDoc(
-      doc(fdb, "statusContracte", String(rec.numarContract)),
+      doc(fdb, "statusContracte", String(nr)),
       { status: "trimis", updatedAt: now },
       { merge: true }
     );
   }
 };
 
-export const listDrafturi = () =>
-  db.contracte.where("status").equals("draft").reverse().sortBy("updatedAt");
+export const listDrafturi = async () => {
+  const snap = await getDocs(collection(fdb, "drafturi"));
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((c) => (c.status || "draft") === "draft")
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+};
 
 export const STATUS_STEPS = ["draft", "trimis", "semnat", "finalizat"];
 
 // Sursa de adevăr pentru status = Firestore ("statusContracte/{numarContract}").
-// Scrie și local (best-effort) pentru a păstra coerentă lista de drafturi.
 export const setContractStatusByNumar = async (numarContract, status) => {
   if (!numarContract) return 0;
   const now = new Date().toISOString();
@@ -128,28 +123,18 @@ export const setContractStatusByNumar = async (numarContract, status) => {
     { status, updatedAt: now },
     { merge: true }
   );
+  // reflectă statusul și pe draftul corespunzător (best-effort)
   try {
-    await db.contracte
-      .where("numarContract").equals(numarContract)
-      .modify({ status, updatedAt: now });
+    const snap = await getDocs(query(collection(fdb, "drafturi"), where("numarContract", "==", numarContract)));
+    await Promise.all(snap.docs.map((d) => updateDoc(d.ref, { status, updatedAt: now })));
   } catch {
-    /* local opțional */
+    /* opțional */
   }
   return 1;
 };
 
 export const getStatusMapByNumar = async () => {
   const out = {};
-  // 1) local (legacy / drafturi offline)
-  try {
-    const all = await db.contracte.toArray();
-    for (const c of all) {
-      if (c.numarContract) out[c.numarContract] = c.status || "draft";
-    }
-  } catch {
-    /* ignoră erorile locale */
-  }
-  // 2) cloud — autoritar, suprascrie localul
   try {
     const snap = await getDocs(collection(fdb, "statusContracte"));
     snap.docs.forEach((d) => {
@@ -157,13 +142,16 @@ export const getStatusMapByNumar = async () => {
       if (s) out[d.id] = s;
     });
   } catch {
-    /* dacă cloud-ul pică, rămâne fallback-ul local */
+    /* dacă pică, returnează ce s-a strâns */
   }
   return out;
 };
 
 export const listContracte = async (search = "") => {
-  const all = await db.contracte.orderBy("updatedAt").reverse().toArray();
+  const snap = await getDocs(collection(fdb, "drafturi"));
+  const all = snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
   if (!search) return all;
   const q = search.toLowerCase();
   return all.filter(
@@ -174,15 +162,23 @@ export const listContracte = async (search = "") => {
   );
 };
 
-export const getContract = (id) => db.contracte.get(id);
+export const getContract = async (id) => {
+  const snap = await getDoc(doc(fdb, "drafturi", String(id)));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : undefined;
+};
 
-export const getContractByNumar = (nr) =>
-  db.contracte.where("numarContract").equals(nr).first();
+export const getContractByNumar = async (nr) => {
+  const snap = await getDocs(query(collection(fdb, "drafturi"), where("numarContract", "==", nr)));
+  if (snap.empty) return undefined;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() };
+};
 
-export const deleteContract = (id) => db.contracte.delete(id);
+export const deleteContract = (id) => deleteDoc(doc(fdb, "drafturi", String(id)));
 
 export const exportAll = async () => {
-  const all = await db.contracte.toArray();
+  const snap = await getDocs(collection(fdb, "drafturi"));
+  const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   return { version: 1, exportedAt: new Date().toISOString(), contracte: all };
 };
 
@@ -192,7 +188,11 @@ export const importAll = async (data) => {
   for (const c of data.contracte) {
     // eslint-disable-next-line no-unused-vars
     const { id, ...rest } = c;
-    await db.contracte.add({ ...rest, updatedAt: rest.updatedAt || new Date().toISOString() });
+    await addDoc(collection(fdb, "drafturi"), {
+      ...rest,
+      status: rest.status || "draft",
+      updatedAt: rest.updatedAt || new Date().toISOString(),
+    });
     count++;
   }
   return count;
