@@ -424,8 +424,11 @@ function App() {
     });
   };
 
-  const autoFetchAnaf = async () => {
-    if (!clientData.cui || !validateCUI(clientData.cui)) return;
+  const autoFetchAnaf = async (manual = false) => {
+    if (!clientData.cui || !validateCUI(clientData.cui)) {
+      if (manual === true) await alert("CUI lipsă sau invalid. Introdu un CUI corect.", { variant: "warning" });
+      return;
+    }
     // ANAF are doar firme (CUI 2-10 cifre); pentru CNP (persoană fizică) se sare peste.
     const cleanCui = String(clientData.cui).replace(/^RO/i, "").trim();
     const isCompanyCui = /^\d{2,10}$/.test(cleanCui);
@@ -436,7 +439,10 @@ function App() {
         setAnafSyncAt(new Date());
       } catch (e) {
         console.warn("ANAF:", e.message);
+        if (manual === true) await alert("ANAF: " + (e?.message || e), { variant: "danger" });
       }
+    } else if (manual === true) {
+      await alert("CUI-ul pare a fi CNP (persoană fizică). ANAF nu are date pentru persoane fizice.", { variant: "warning" });
     }
     try {
       const modele = await getModeleByCui(clientData.cui);
@@ -1536,11 +1542,11 @@ function App() {
                           onChange={handleClientChange}
                           onBlur={autoFetchAnaf}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") { e.preventDefault(); autoFetchAnaf(); }
+                            if (e.key === "Enter") { e.preventDefault(); autoFetchAnaf(true); }
                           }}
                           style={{ borderColor: clientData.cui && !validateCUI(clientData.cui) ? "var(--danger)" : undefined }}
                         />
-                        <button type="button" className="input-action" onClick={autoFetchAnaf} title="Caută la ANAF">
+                        <button type="button" className="input-action" onClick={() => autoFetchAnaf(true)} title="Caută la ANAF">
                           ANAF ↻
                         </button>
                       </div>
