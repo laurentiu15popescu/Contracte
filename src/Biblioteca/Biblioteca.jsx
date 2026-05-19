@@ -61,7 +61,7 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
     try {
       const n = await setContractStatusByNumar(nr, status);
       if (!n) {
-        await alert("Contractul nu există local (în Dexie). Deschide-l și salvează-l mai întâi.", { variant: "warning" });
+        await alert("Contractul nu a putut fi actualizat. Deschide-l și salvează-l mai întâi.", { variant: "warning" });
         return;
       }
       setStatusMap((m) => ({ ...m, [nr]: status }));
