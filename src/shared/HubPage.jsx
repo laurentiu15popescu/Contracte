@@ -6,7 +6,7 @@ export default function HubPage({ eyebrow, title, subtitle, cards }) {
       <div className="dash-hero">
         <div className="dash-hero-inner">
           <div>
-            <div className="dash-hero-eyebrow">{eyebrow}</div>
+            {eyebrow && <div className="dash-hero-eyebrow">{eyebrow}</div>}
             <h1>{title}</h1>
             {subtitle && <p>{subtitle}</p>}
           </div>

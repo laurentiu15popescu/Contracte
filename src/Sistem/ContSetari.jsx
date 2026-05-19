@@ -7,6 +7,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../shared/firebase";
+import "../Dashboard/Dashboard.css";
 
 const BRAND = "#6366F1";
 const ACCENT2 = "#34CAE8";
@@ -215,11 +216,12 @@ export default function ContSetari() {
 
   return (
     <div className="dash">
-      <div className="page-head">
-        <div className="eyebrow">ALUMA · SISTEM</div>
-        <h1>Contul Meu</h1>
-        <div className="sub">
-          Gestionează datele de acces — parolă, email de logare și telefon de contact.
+      <div className="dash-hero">
+        <div className="dash-hero-inner">
+          <div>
+            <h1>Contul Meu</h1>
+            <p>Gestionează datele de acces — parolă, email de logare și telefon de contact.</p>
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { listModele, deleteModel } from "../shared/db";
 import { useDialog } from "../shared/Dialog";
+import Icon from "../shared/Icon";
 import "../Dashboard/Dashboard.css";
 
 export default function Modele({ onUseModel, onOpenBlank }) {
@@ -18,7 +19,13 @@ export default function Modele({ onUseModel, onOpenBlank }) {
     }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    let active = true;
+    listModele()
+      .then((list) => { if (active) setItems(list); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   const handleDelete = async (id, nume) => {
     if (!(await confirm(`Ștergi modelul${nume ? ` pentru ${nume}` : ""}?`, { variant: "danger", confirmLabel: "Șterge" }))) return;
@@ -42,7 +49,7 @@ export default function Modele({ onUseModel, onOpenBlank }) {
             style={{ "--qa-color": "#0EA5E9" }}
             onClick={onOpenBlank}
           >
-            <div className="qa-icon">📄</div>
+            <div className="qa-icon"><Icon name="document" /></div>
             <div>
               <div className="qa-label">Deschide model blank</div>
               <div className="qa-desc">Template gol — editează clauze și salvează ca model</div>

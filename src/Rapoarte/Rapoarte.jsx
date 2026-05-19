@@ -4,6 +4,7 @@ import { db } from "../shared/firebase";
 import "../Dashboard/Dashboard.css";
 import "./Rapoarte.css";
 import { useDialog } from "../shared/Dialog";
+import Icon from "../shared/Icon";
 
 /* ---------- Helpers ---------- */
 const fmt = (n) => new Intl.NumberFormat("ro-RO").format(Math.round(Number(n) || 0));
@@ -26,11 +27,11 @@ const daysBetween = (a, b) => Math.round((a - b) / 86400000);
 
 /* ---------- Sub-tabs ---------- */
 const TABS = [
-  { id: "venituri", label: "Venituri", icon: "💰" },
-  { id: "evenimente", label: "Evenimente", icon: "📅" },
-  { id: "clienti", label: "Clienți", icon: "👥" },
-  { id: "contracte", label: "Contracte", icon: "📄" },
-  { id: "operational", label: "Operațional", icon: "📊" },
+  { id: "venituri", label: "Venituri", icon: <Icon name="money" /> },
+  { id: "evenimente", label: "Evenimente", icon: <Icon name="calendar" /> },
+  { id: "clienti", label: "Clienți", icon: <Icon name="users" /> },
+  { id: "contracte", label: "Contracte", icon: <Icon name="document" /> },
+  { id: "operational", label: "Operațional", icon: <Icon name="chart" /> },
 ];
 
 /* ---------- CSV export ---------- */
@@ -154,7 +155,6 @@ export default function Rapoarte({ onOpenContract, onNewContract }) {
       <div className="dash-hero">
         <div className="dash-hero-inner">
           <div>
-            <div className="dash-hero-eyebrow">Aluma · Rapoarte & Analiză</div>
             <h1>Rapoarte</h1>
             <p>
               {loading
@@ -162,7 +162,7 @@ export default function Rapoarte({ onOpenContract, onNewContract }) {
                 : `${filtered.length} evenimente în intervalul selectat · ${fmt(filtered.reduce((s, r) => s + r.total, 0))} LEI total`}
             </p>
           </div>
-          <button className="dash-hero-cta" onClick={load}>↻ Reîncarcă</button>
+          <button className="dash-hero-cta" onClick={load}><Icon name="refresh" /> Reîncarcă</button>
         </div>
       </div>
 
@@ -182,7 +182,7 @@ export default function Rapoarte({ onOpenContract, onNewContract }) {
           <button onClick={() => { const d = new Date(today); d.setMonth(d.getMonth() - 11); d.setDate(1); setFrom(d.toISOString().slice(0,10)); setTo(today.toISOString().slice(0,10)); }}>Ultimele 12 luni</button>
           <button onClick={() => { setFrom("2000-01-01"); setTo("2099-12-31"); }}>Tot</button>
         </div>
-        <button className="rap-print no-print" onClick={() => window.print()}>🖨 Print / PDF</button>
+        <button className="rap-print no-print" onClick={() => window.print()}><Icon name="printer" /> Print / PDF</button>
       </div>
 
       {/* Sub-tabs */}
@@ -272,10 +272,10 @@ function VenituriTab({ rows, fromD, toD, allRows }) {
   return (
     <>
       <div className="dash-kpis">
-        <Kpi color="#10B981" icon="💰" title="Total interval" value={fmt(total)} sub="LEI" />
-        <Kpi color="#6366F1" icon="📅" title="Evenimente" value={fmt(rows.length)} sub="în interval" />
-        <Kpi color="#34CAE8" icon="📊" title="Valoare medie" value={fmt(avg)} sub="LEI / eveniment" />
-        <Kpi color={yoyDelta >= 0 ? "#10B981" : "#EF4444"} icon={yoyDelta >= 0 ? "📈" : "📉"} title="YoY (an curent vs anterior)" value={`${yoyDelta >= 0 ? "+" : ""}${yoyDelta.toFixed(1)}%`} sub={`${fmt(yoyTotalCur)} vs ${fmt(yoyTotalPrev)}`} />
+        <Kpi color="#10B981" icon={<Icon name="money" />} title="Total interval" value={fmt(total)} sub="LEI" />
+        <Kpi color="#6366F1" icon={<Icon name="calendar" />} title="Evenimente" value={fmt(rows.length)} sub="în interval" />
+        <Kpi color="#34CAE8" icon={<Icon name="chart" />} title="Valoare medie" value={fmt(avg)} sub="LEI / eveniment" />
+        <Kpi color={yoyDelta >= 0 ? "#10B981" : "#EF4444"} icon={<Icon name={yoyDelta >= 0 ? "trend-up" : "trend-down"} />} title="YoY (an curent vs anterior)" value={`${yoyDelta >= 0 ? "+" : ""}${yoyDelta.toFixed(1)}%`} sub={`${fmt(yoyTotalCur)} vs ${fmt(yoyTotalPrev)}`} />
       </div>
 
       <div className="dash-grid">
@@ -510,10 +510,10 @@ function ClientiTab({ rows, today, onOpenContract }) {
   return (
     <>
       <div className="dash-kpis">
-        <Kpi color="#6366F1" icon="👥" title="Clienți totali" value={fmt(byClient.length)} sub="unici după CUI" />
-        <Kpi color="#10B981" icon="🔁" title="Recurenți" value={fmt(active)} sub="≥ 2 evenimente" />
+        <Kpi color="#6366F1" icon={<Icon name="users" />} title="Clienți totali" value={fmt(byClient.length)} sub="unici după CUI" />
+        <Kpi color="#10B981" icon={<Icon name="repeat" />} title="Recurenți" value={fmt(active)} sub="≥ 2 evenimente" />
         <Kpi color="#F59E0B" icon="1️⃣" title="One-shot" value={fmt(oneShot)} sub="1 singur eveniment" />
-        <Kpi color="#34CAE8" icon="🏢" title="PJ / PF" value={`${pj} / ${pf}`} sub="distribuție" />
+        <Kpi color="#34CAE8" icon={<Icon name="building" />} title="PJ / PF" value={`${pj} / ${pf}`} sub="distribuție" />
       </div>
 
       <section className="panel" style={{ marginTop: 16 }}>
@@ -521,7 +521,7 @@ function ClientiTab({ rows, today, onOpenContract }) {
           <h2>Clienți inactivi · &gt; 12 luni (oportunități re-contact)</h2>
           <button className="rap-csv" onClick={() => downloadCsv(inactiv.map((c) => ({ client: c.client, cui: c.cui, ultimul_eveniment: toDmy(c.lastDate), valoare_istorica: c.value, evenimente: c.count })), "clienti-inactivi.csv")}>↓ CSV</button>
         </div>
-        {inactiv.length === 0 ? <div className="empty">Niciun client inactiv. 🎉</div> : (
+        {inactiv.length === 0 ? <div className="empty">Niciun client inactiv.</div> : (
           <table className="rap-table">
             <thead><tr><th>Client</th><th>CUI</th><th>Ultimul eveniment</th><th>Zile</th><th>Evenimente</th><th style={{ textAlign: "right" }}>Valoare istorică</th></tr></thead>
             <tbody>
@@ -570,10 +570,10 @@ function ContracteTab({ users, rows, onOpenContract }) {
   return (
     <>
       <div className="dash-kpis">
-        <Kpi color="#6366F1" icon="📑" title="Contracte cadru" value={fmt(cadru.length)} sub={`val. medie ${fmt(avgValCadru)} LEI`} />
-        <Kpi color="#34CAE8" icon="📄" title="Evenimente unice" value={fmt(unic.length)} sub={`val. medie ${fmt(avgValUnic)} LEI`} />
-        <Kpi color="#10B981" icon="📎" title="Anexe / cadru" value={avgAnexeCadru.toFixed(1)} sub="medie" />
-        <Kpi color="#EF4444" icon="⚠" title="Fără încasare" value={fmt(fărăÎncasare.length)} sub="draft / restanță" />
+        <Kpi color="#6366F1" icon={<Icon name="contract" />} title="Contracte cadru" value={fmt(cadru.length)} sub={`val. medie ${fmt(avgValCadru)} LEI`} />
+        <Kpi color="#34CAE8" icon={<Icon name="document" />} title="Evenimente unice" value={fmt(unic.length)} sub={`val. medie ${fmt(avgValUnic)} LEI`} />
+        <Kpi color="#10B981" icon={<Icon name="paperclip" />} title="Anexe / cadru" value={avgAnexeCadru.toFixed(1)} sub="medie" />
+        <Kpi color="#EF4444" icon={<Icon name="warning" />} title="Fără încasare" value={fmt(fărăÎncasare.length)} sub="draft / restanță" />
       </div>
 
       <div className="dash-grid">
@@ -582,7 +582,7 @@ function ContracteTab({ users, rows, onOpenContract }) {
             <h2>Contracte fără încasare</h2>
             <button className="rap-csv" onClick={() => downloadCsv(fărăÎncasare, "fara-incasare.csv")}>↓ CSV</button>
           </div>
-          {fărăÎncasare.length === 0 ? <div className="empty">Toate contractele au încasări. 🎉</div> : (
+          {fărăÎncasare.length === 0 ? <div className="empty">Toate contractele au încasări.</div> : (
             <table className="rap-table">
               <thead><tr><th>Nr.</th><th>Client</th><th>Tip</th><th>Anexe</th></tr></thead>
               <tbody>
@@ -604,7 +604,7 @@ function ContracteTab({ users, rows, onOpenContract }) {
             <h2>Contracte fără eveniment</h2>
             <button className="rap-csv" onClick={() => downloadCsv(fărăEveniment, "fara-eveniment.csv")}>↓ CSV</button>
           </div>
-          {fărăEveniment.length === 0 ? <div className="empty">Toate contractele au evenimente. 🎉</div> : (
+          {fărăEveniment.length === 0 ? <div className="empty">Toate contractele au evenimente.</div> : (
             <table className="rap-table">
               <thead><tr><th>Nr.</th><th>Client</th><th>Tip</th></tr></thead>
               <tbody>
@@ -663,10 +663,10 @@ function OperationalTab({ rows, today, togglePaid, onOpenContract }) {
   return (
     <>
       <div className="dash-kpis">
-        <Kpi color="#EF4444" icon="⏰" title="Restanțe" value={fmt(restante.length)} sub={`${fmt(restante.reduce((s, r) => s + r.total, 0))} LEI`} />
-        <Kpi color="#F59E0B" icon="📆" title="Pipeline 30 zile" value={fmt(pipeline.length)} sub={`${fmt(pipeline.reduce((s, r) => s + r.total, 0))} LEI`} />
-        <Kpi color="#10B981" icon="✓" title="Marcate încasate" value={fmt(incasateStrict)} sub={`din ${realizate} realizate`} />
-        <Kpi color="#6366F1" icon="🎂" title="Aniversări lună" value={fmt(aniv.length)} sub="acum 1 an" />
+        <Kpi color="#EF4444" icon={<Icon name="clock" />} title="Restanțe" value={fmt(restante.length)} sub={`${fmt(restante.reduce((s, r) => s + r.total, 0))} LEI`} />
+        <Kpi color="#F59E0B" icon={<Icon name="calendar" />} title="Pipeline 30 zile" value={fmt(pipeline.length)} sub={`${fmt(pipeline.reduce((s, r) => s + r.total, 0))} LEI`} />
+        <Kpi color="#10B981" icon={<Icon name="check" />} title="Marcate încasate" value={fmt(incasateStrict)} sub={`din ${realizate} realizate`} />
+        <Kpi color="#6366F1" icon={<Icon name="cake" />} title="Aniversări lună" value={fmt(aniv.length)} sub="acum 1 an" />
       </div>
 
       <section className="panel" style={{ marginTop: 16 }}>
@@ -674,7 +674,7 @@ function OperationalTab({ rows, today, togglePaid, onOpenContract }) {
           <h2>Restanțe · scadență depășită, neîncasat</h2>
           <button className="rap-csv" onClick={() => downloadCsv(restante.map((r) => ({ contract: r.nr, anexa: r.anexaIndex, client: r.client, scadenta: toDmy(r.scadenta), zile_intarziere: daysBetween(today, r.scadenta), total: r.total })), "restante.csv")}>↓ CSV</button>
         </div>
-        {restante.length === 0 ? <div className="empty">Nicio restanță. 🎉</div> : (
+        {restante.length === 0 ? <div className="empty">Nicio restanță.</div> : (
           <table className="rap-table">
             <thead><tr><th>Contract</th><th>Client</th><th>Scop</th><th>Scadență</th><th>Întârziere</th><th style={{ textAlign: "right" }}>Total</th><th></th></tr></thead>
             <tbody>

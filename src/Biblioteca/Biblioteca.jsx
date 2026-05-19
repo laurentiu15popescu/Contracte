@@ -1,11 +1,19 @@
 import { useEffect, useState, useCallback } from "react";
 import { collection, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
 import { db } from "../shared/firebase";
-import { getStatusMapByNumar, setContractStatusByNumar } from "../shared/db";
+import { getStatusMapByNumar, setContractStatusByNumar, listModele } from "../shared/db";
 import Contracte from "./Contracte";
 import Clienti from "./Clienti";
 import Modele from "./Modele";
 import { useDialog } from "../shared/Dialog";
+import Icon from "../shared/Icon";
+import "../Dashboard/Dashboard.css";
+
+const TABS = [
+  { id: "contracte", label: "Contracte", icon: "contract" },
+  { id: "clienti", label: "Clienți", icon: "users" },
+  { id: "modele", label: "Modele", icon: "folder" },
+];
 
 export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseModel, onOpenBlank }) {
   const { alert, confirm } = useDialog();
@@ -18,21 +26,24 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
   const [evenimente, setEvenimente] = useState([]);
   const [incasari, setIncasari] = useState([]);
   const [statusMap, setStatusMap] = useState({});
+  const [modele, setModele] = useState([]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [u, e, i, sm] = await Promise.all([
+      const [u, e, i, sm, md] = await Promise.all([
         getDocs(collection(db, "users")),
         getDocs(collection(db, "evenimente")),
         getDocs(collection(db, "incasari")),
         getStatusMapByNumar(),
+        listModele(),
       ]);
       setUsers(u.docs.map((d) => ({ id: d.id, ...d.data() })));
       setEvenimente(e.docs.map((d) => ({ id: d.id, ...d.data() })));
       setIncasari(i.docs.map((d) => ({ id: d.id, ...d.data() })));
       setStatusMap(sm);
+      setModele(md || []);
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -70,20 +81,32 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
     }
   };
 
-  return (
-    <section className="card">
-      <div className="section">
-        <div className="section-head">
-          <span className="idx">⌗</span>
-          <h2>Bibliotecă</h2>
-          <span className="helper">
-            {loading ? "Se încarcă din Firestore…" : `${users.length} contracte · cloud`}
-          </span>
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-            <button className="btn" onClick={refresh} disabled={loading}>↻ Reîmprospătează</button>
-          </div>
-        </div>
+  const active = TABS.find((t) => t.id === tab) || TABS[0];
+  const nrClienti = new Set(users.map((u) => u.cui || "—")).size;
+  const plural = (n, sg, pl) => `${n} ${n === 1 ? sg : pl}`;
+  const subtitle = loading
+    ? "Se încarcă din Firestore…"
+    : tab === "clienti"
+      ? `${plural(nrClienti, "client", "clienți")} · cloud`
+      : tab === "modele"
+        ? `${plural(modele.length, "model", "modele")} · cloud`
+        : `${plural(users.length, "contract", "contracte")} · cloud`;
 
+  return (
+    <div className="dash">
+      <div className="dash-hero">
+        <div className="dash-hero-inner">
+          <div>
+            <h1>{active.label}</h1>
+            <p>{subtitle}</p>
+          </div>
+          <button className="dash-hero-cta" onClick={refresh} disabled={loading}>
+            <Icon name="refresh" /> Reîmprospătează
+          </button>
+        </div>
+      </div>
+
+      <div className="section">
         {error && (
           <div className="errors"><strong>Eroare:</strong> {error}</div>
         )}
@@ -111,6 +134,6 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
 
         {tab === "modele" && <Modele onUseModel={onUseModel} onOpenBlank={onOpenBlank} />}
       </div>
-    </section>
+    </div>
   );
 }

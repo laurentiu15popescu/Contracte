@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../shared/firebase";
+import Icon from "../shared/Icon";
 import "./Dashboard.css";
 
 const fmt = (n) => new Intl.NumberFormat("ro-RO").format(Math.round(Number(n) || 0));
@@ -177,7 +178,6 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
       <div className="dash-hero">
         <div className="dash-hero-inner">
           <div>
-            <div className="dash-hero-eyebrow">Aluma · Panou de control</div>
             <h1>{greetingByHour()}, ALUMA</h1>
             <p>
               {loading
@@ -195,7 +195,7 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
       <div className="dash-kpis">
         <Kpi
           color="#3B5BDB"
-          icon="📄"
+          icon={<Icon name="document" />}
           title="Contracte totale"
           value={fmt(stats.contracts)}
           sub={`${stats.annexes} anexe emise`}
@@ -203,7 +203,7 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
         />
         <Kpi
           color="#10B981"
-          icon="💰"
+          icon={<Icon name="money" />}
           title="Valoare totală"
           value={fmt(stats.totalValue)}
           sub="LEI · toate contractele"
@@ -211,7 +211,7 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
         />
         <Kpi
           color="#6F86E8"
-          icon="📅"
+          icon={<Icon name="calendar" />}
           title="Luna curentă"
           value={fmt(stats.monthValue)}
           sub={`${stats.monthCount} evenimente · LEI`}
@@ -219,7 +219,7 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
         />
         <Kpi
           color="#F59E0B"
-          icon="👥"
+          icon={<Icon name="users" />}
           title="Clienți unici"
           value={fmt(stats.clients)}
           sub="după CUI / CNP"
@@ -230,11 +230,11 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
       {/* Quick actions */}
       <div className="section-cap">Acțiuni Rapide</div>
       <div className="qa-grid">
-        <QA color="#3B5BDB" icon="＋" label="Contract nou" desc="Pornește un contract gol" onClick={onNewContract} />
-        <QA color="#0EA5E9" icon="📄" label="Model contract (blank)" desc="PDF clauze fără date — pre-acord client" onClick={() => onShowBlankTemplate?.()} />
-        <QA color="#6F86E8" icon="📁" label="Bibliotecă" desc="Răsfoiește contractele salvate" onClick={() => onGoLibrary?.("contracte")} />
-        <QA color="#10B981" icon="👥" label="Clienți" desc="Vezi istoricul beneficiarilor" onClick={() => onGoLibrary?.("clienti")} />
-        <QA color="#F59E0B" icon="📊" label="Rapoarte" desc="Analiză venituri lunare" onClick={() => onGoReports?.()} />
+        <QA color="#3B5BDB" icon={<Icon name="plus" />} label="Contract nou" desc="Pornește un contract gol" onClick={onNewContract} />
+        <QA color="#0EA5E9" icon={<Icon name="document" />} label="Model contract (blank)" desc="PDF clauze fără date — pre-acord client" onClick={() => onShowBlankTemplate?.()} />
+        <QA color="#6F86E8" icon={<Icon name="folder" />} label="Bibliotecă" desc="Răsfoiește contractele salvate" onClick={() => onGoLibrary?.("contracte")} />
+        <QA color="#10B981" icon={<Icon name="users" />} label="Clienți" desc="Vezi istoricul beneficiarilor" onClick={() => onGoLibrary?.("clienti")} />
+        <QA color="#F59E0B" icon={<Icon name="chart" />} label="Rapoarte" desc="Analiză venituri lunare" onClick={() => onGoReports?.()} />
       </div>
 
       {/* Main grid */}
@@ -319,8 +319,9 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
                         ? "linear-gradient(135deg,#F59E0B,#EAB308)"
                         : "linear-gradient(135deg,#EF4444,#F59E0B)",
                       fontSize: 14,
+                      color: "#fff",
                     }}>
-                      {isPred ? "📤" : "💰"}
+                      {isPred ? <Icon name="outbox-up" /> : <Icon name="money" />}
                     </div>
                     <div className="row-main">
                       <div className="row-title">

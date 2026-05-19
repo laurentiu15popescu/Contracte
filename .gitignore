@@ -33,3 +33,7 @@ release
 
 # Firebase CLI local cache (keep .firebaserc / firebase.json tracked)
 .firebase/
+
+# Firebase Admin SDK service-account keys — NEVER commit
+*-firebase-adminsdk-*.json
+serviceAccountKey*.json

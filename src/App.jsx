@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import Contract from "./FluxContract/Contract";
 import Anexa from "./FluxContract/Anexa";
+import Icon from "./shared/Icon";
 import {
   addDays,
   addMonths,
@@ -867,8 +868,8 @@ function App() {
     const items = [];
     items.push({ ok: !!clientData.numeBeneficiar, text: "Denumire beneficiar completată" });
     items.push({ ok: !!clientData.reprezentant, text: "Reprezentant legal completat" });
-    items.push({ ok: !clientData.cui || validateCUI(clientData.cui), text: "CUI / CNP cu format corect" });
-    items.push({ ok: !clientData.iban || validateIBAN(clientData.iban), text: "IBAN cu format corect" });
+    items.push({ ok: !!clientData.cui && validateCUI(clientData.cui), text: "CUI / CNP cu format corect" });
+    items.push({ ok: !!clientData.iban && validateIBAN(clientData.iban), text: "IBAN cu format corect" });
     items.push({ ok: isValidDmy(clientData.dataContract), text: "Data contract validă" });
     anexe.forEach((a, i) => {
       const ok =
@@ -944,7 +945,7 @@ function App() {
             <button className="back-btn" onClick={sendEmail}>Trimite email</button>
             {blankPreview && (
               <button className="back-btn" onClick={handleSaveAsModel} title="Salvează acest model editat pentru un client">
-                💾 Salvează ca model
+                <Icon name="save" /> Salvează ca model
               </button>
             )}
             <button className="print-btn" onClick={() => window.print()}>Printează / PDF</button>
@@ -1022,7 +1023,7 @@ function App() {
                 else inp?.focus();
               }}
             >
-              📅 Calendar
+              <Icon name="calendar" /> Calendar
             </button>
             <input
               type="date"
@@ -1113,13 +1114,13 @@ function App() {
           className={`nav-item ${isDashboard ? "active" : ""}`}
           onClick={() => setStep("dashboard")}
         >
-          <span>⌂ Dashboard</span>
+          <span><Icon name="home" /> Dashboard</span>
         </button>
         <button
           className={`nav-item ${isRapoarte ? "active" : ""}`}
           onClick={() => setStep("rapoarte")}
         >
-          <span>📊 Rapoarte</span>
+          <span><Icon name="chart" /> Rapoarte</span>
         </button>
 
         <div
@@ -1178,19 +1179,19 @@ function App() {
           className={`nav-item ${step === "biblioteca-contracte" || step === "salvate" ? "active" : ""}`}
           onClick={() => setStep("biblioteca-contracte")}
         >
-          <span>📁 Contracte</span>
+          <span><Icon name="folder" /> Contracte</span>
         </button>
         <button
           className={`nav-item ${step === "biblioteca-clienti" ? "active" : ""}`}
           onClick={() => setStep("biblioteca-clienti")}
         >
-          <span>👥 Clienți</span>
+          <span><Icon name="users" /> Clienți</span>
         </button>
         <button
           className={`nav-item ${step === "biblioteca-modele" ? "active" : ""}`}
           onClick={() => setStep("biblioteca-modele")}
         >
-          <span>📐 Modele</span>
+          <span><Icon name="ruler" /> Modele</span>
         </button>
 
         <div
@@ -1203,28 +1204,28 @@ function App() {
           <span>＋ Contract nou</span>
         </button>
         <button className="nav-item" onClick={onExport}>
-          <span>↓ Export JSON</span>
+          <span><Icon name="download" /> Export JSON</span>
         </button>
         <button className="nav-item" onClick={() => fileRef.current?.click()}>
-          <span>↑ Import JSON</span>
+          <span><Icon name="upload" /> Import JSON</span>
         </button>
         <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={onImport} />
         <button className="nav-item" onClick={handleExportBackup}>
-          <span>↓ Backup DB</span>
+          <span><Icon name="download" /> Backup DB</span>
         </button>
         <button className="nav-item" onClick={() => backupFileRef.current?.click()}>
-          <span>↑ Restaurează backup</span>
+          <span><Icon name="upload" /> Restaurează backup</span>
         </button>
         <input ref={backupFileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={handleImportBackup} />
         <button className="nav-item" onClick={() => docFileRef.current?.click()}>
-          <span>↑ Import .docx / PDF</span>
+          <span><Icon name="inbox-down" /> Import .docx / PDF</span>
         </button>
         <input ref={docFileRef} type="file" accept=".docx,.pdf" style={{ display: "none" }} onChange={handleImportDocx} />
         <button
           className={`nav-item ${isCont ? "active" : ""}`}
           onClick={() => setStep("cont")}
         >
-          <span>👤 Contul meu</span>
+          <span><Icon name="user" /> Contul meu</span>
         </button>
 
         <div className="sidebar-bottom">
@@ -1287,7 +1288,6 @@ function App() {
         {isHubFlux && (
           <>
             <HubPage
-              eyebrow="Aluma · Flux contract"
               title="Flux contract"
               subtitle="Pași pentru contractul curent — beneficiar, anexe și adăugare anexă nouă."
               cards={[
@@ -1314,14 +1314,14 @@ function App() {
                 })),
                 {
                   color: "#10B981",
-                  icon: "＋",
+                  icon: <Icon name="plus" />,
                   label: "Adaugă anexă",
                   desc: "Anexă nouă la contract",
                   onClick: () => { addAnexa(); },
                 },
                 {
                   color: "#A3A3A3",
-                  icon: "✓",
+                  icon: <Icon name="check" />,
                   label: "Marchează trimis",
                   desc: currentContractId ? "Scoate contractul din drafturi" : "Salvează contractul mai întâi",
                   onClick: handleMarkTrimis,
@@ -1343,7 +1343,7 @@ function App() {
                       className="qa"
                       style={{ "--qa-color": "#F59E0B", cursor: "default" }}
                     >
-                      <div className="qa-icon">📝</div>
+                      <div className="qa-icon"><Icon name="edit-doc" /></div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="qa-label">
                           {d.numeBeneficiar || "(fără beneficiar)"} · #{d.numarContract || "—"}
@@ -1375,27 +1375,26 @@ function App() {
         {/* Hub: Bibliotecă */}
         {isHubBiblioteca && (
           <HubPage
-            eyebrow="Aluma · Bibliotecă"
             title="Bibliotecă"
             subtitle="Răsfoiește contractele salvate și istoricul beneficiarilor."
             cards={[
               {
                 color: "#F59E0B",
-                icon: "📁",
+                icon: <Icon name="folder" />,
                 label: "Contracte",
                 desc: "Contractele salvate",
                 onClick: () => setStep("biblioteca-contracte"),
               },
               {
                 color: "#8B5CF6",
-                icon: "👥",
+                icon: <Icon name="users" />,
                 label: "Clienți",
                 desc: "Istoricul beneficiarilor",
                 onClick: () => setStep("biblioteca-clienti"),
               },
               {
                 color: "#0EA5E9",
-                icon: "📐",
+                icon: <Icon name="ruler" />,
                 label: "Modele",
                 desc: "Modele de contract per client",
                 onClick: () => setStep("biblioteca-modele"),
@@ -1407,17 +1406,16 @@ function App() {
         {/* Hub: Sistem */}
         {isHubSistem && (
           <HubPage
-            eyebrow="Aluma · Sistem"
             title="Sistem"
             subtitle="Operațiuni asupra datelor — backup, import, export."
             cards={[
               { color: "#6366F1", icon: "＋", label: "Contract nou", desc: "Pornește un contract gol", onClick: handleNewContract },
-              { color: "#10B981", icon: "↓", label: "Export JSON", desc: "Exportă contractul curent", onClick: onExport },
-              { color: "#34CAE8", icon: "↑", label: "Import JSON", desc: "Încarcă contract din JSON", onClick: () => fileRef.current?.click() },
-              { color: "#F59E0B", icon: "↓", label: "Backup DB", desc: "Backup integral baza locală", onClick: handleExportBackup },
-              { color: "#EF4444", icon: "↑", label: "Restaurează backup", desc: "Restaurează din backup", onClick: () => backupFileRef.current?.click() },
-              { color: "#8B5CF6", icon: "📥", label: "Import .docx / PDF", desc: "Pre-populează din Word/PDF", onClick: () => docFileRef.current?.click() },
-              { color: "#0EA5E9", icon: "👤", label: "Contul meu", desc: "Parolă, email, telefon", onClick: () => setStep("cont") },
+              { color: "#10B981", icon: <Icon name="download" />, label: "Export JSON", desc: "Exportă contractul curent", onClick: onExport },
+              { color: "#34CAE8", icon: <Icon name="upload" />, label: "Import JSON", desc: "Încarcă contract din JSON", onClick: () => fileRef.current?.click() },
+              { color: "#F59E0B", icon: <Icon name="download" />, label: "Backup DB", desc: "Backup integral baza locală", onClick: handleExportBackup },
+              { color: "#EF4444", icon: <Icon name="upload" />, label: "Restaurează backup", desc: "Restaurează din backup", onClick: () => backupFileRef.current?.click() },
+              { color: "#8B5CF6", icon: <Icon name="inbox-down" />, label: "Import .docx / PDF", desc: "Pre-populează din Word/PDF", onClick: () => docFileRef.current?.click() },
+              { color: "#0EA5E9", icon: <Icon name="user" />, label: "Contul meu", desc: "Parolă, email, telefon", onClick: () => setStep("cont") },
             ]}
           />
         )}
@@ -1547,7 +1545,7 @@ function App() {
                           style={{ borderColor: clientData.cui && !validateCUI(clientData.cui) ? "var(--danger)" : undefined }}
                         />
                         <button type="button" className="input-action" onClick={() => autoFetchAnaf(true)} title="Caută la ANAF">
-                          ANAF ↻
+                          ANAF <Icon name="refresh" />
                         </button>
                       </div>
                     </div>
@@ -1670,7 +1668,7 @@ function App() {
                         else inp?.focus();
                       }}
                     >
-                      <span>📅</span>
+                      <span><Icon name="calendar" /></span>
                       <span>Schimbă valabilitate</span>
                       <input
                         type="date"
@@ -1948,7 +1946,7 @@ function App() {
                 <button className="btn" onClick={resetAll}>Reset formular</button>
                 <div style={{ flex: 1 }} />
                 <button className="btn" onClick={handleSaveToDb}>
-                  💾 {currentContractId ? "Actualizează" : "Salvează"} în DB
+                  <Icon name="save" /> {currentContractId ? "Actualizează" : "Salvează"} în DB
                 </button>
                 {isClient && (
                   <button className="generate-btn" onClick={() => handleGenerate("contract")}>
@@ -2012,15 +2010,15 @@ function App() {
                 <h3>Export <span className="small">finalizare</span></h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <button className="btn" style={{ justifyContent: "space-between", width: "100%" }} onClick={() => handleGenerate("all")}>
-                    <span>📄 Preview & Print PDF</span>
+                    <span><Icon name="document" /> Preview & Print PDF</span>
                     <span style={{ color: "var(--muted)" }}>→</span>
                   </button>
                   <button className="btn" style={{ justifyContent: "space-between", width: "100%" }} onClick={onExport}>
-                    <span>↓ Export JSON</span>
+                    <span><Icon name="download" /> Export JSON</span>
                     <span style={{ color: "var(--muted)" }}>→</span>
                   </button>
                   <button className="btn" style={{ justifyContent: "space-between", width: "100%" }} onClick={sendEmail}>
-                    <span>✉ Trimite email beneficiar</span>
+                    <span><Icon name="mail" /> Trimite email beneficiar</span>
                     <span style={{ color: "var(--muted)" }}>→</span>
                   </button>
                 </div>
