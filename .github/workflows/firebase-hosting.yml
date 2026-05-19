@@ -4,10 +4,15 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: {}
 
 concurrency:
   group: firebase-hosting
   cancel-in-progress: true
+
+# silențiază avertismentul de deprecare Node 20 (rulează pe Node 24)
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   build-deploy:
@@ -21,6 +26,15 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      - name: Verifică secretul de deploy
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ALUMACONTRACTE }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "::error::Lipsește secretul FIREBASE_SERVICE_ACCOUNT_ALUMACONTRACTE (JSON service account). Adaugă-l în Settings → Secrets → Actions."
+            exit 1
+          fi
 
       - name: Install deps
         run: npm ci
@@ -38,10 +52,14 @@ jobs:
           VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
         run: npm run build
 
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ALUMACONTRACTE }}
-          projectId: alumacontracte
-          channelId: live
+      - name: Deploy hosting (firebase-tools)
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/sa.json
+          FIREBASE_SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ALUMACONTRACTE }}
+        run: |
+          printf '%s' "$FIREBASE_SA_JSON" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          npx --yes firebase-tools@15 deploy \
+            --only hosting \
+            --project alumacontracte \
+            --non-interactive
+          rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
