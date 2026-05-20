@@ -2,6 +2,11 @@ import PageMarks from "./PageMarks";
 import { SECTIUNI_ANEXA } from "./contractTemplate";
 import { aplicaOverrides, renderText, reactToText, ClauzaControls, AdaugaLaFinal } from "./clauzeUtils";
 
+const dmyToIso = (s) => {
+  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(s || "");
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+};
+
 const Anexa = ({
   clientData,
   eventData,
@@ -10,8 +15,10 @@ const Anexa = ({
   anexaNumber = 1,
   editMode = false,
   onClauzeChange,
+  onDataChange,
 }) => {
   const dataCurenta =
+    eventData?.dataEmitere ||
     clientData.dataContract ||
     (() => {
       const d = new Date();
@@ -71,6 +78,20 @@ const Anexa = ({
                 <strong>{dataCurenta}</strong>
               </h2>
               <h3 className="text-center doc-subtitle">Comandă fermă client</h3>
+              {editMode && onDataChange && (
+                <div
+                  className="no-print"
+                  contentEditable={false}
+                  style={{ textAlign: "center", margin: "4px 0 10px", fontSize: 13 }}
+                >
+                  Data emiterii:{" "}
+                  <input
+                    type="date"
+                    value={dmyToIso(dataCurenta)}
+                    onChange={(e) => onDataChange(e.target.value)}
+                  />
+                </div>
+              )}
 
               {sectiuniFinale.map((sec) => {
                 let clauzaNum = 0;

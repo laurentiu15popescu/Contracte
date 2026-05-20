@@ -44,6 +44,7 @@ import { useDialog } from "./shared/Dialog";
 const emptyClient = () => ({
   tipContract: "cadru",
   numarContract: "",
+  anexaStart: "",
   dataContract: todayDmy(),
   dataExpirare: addMonths(todayDmy(), 12),
   numeBeneficiar: "",
@@ -59,6 +60,8 @@ const emptyClient = () => ({
 const emptyEvent = () => ({
   tip: "",
   scop: "",
+  numarAnexa: "",
+  dataEmitere: "",
   dataEveniment: "",
   locatie: "",
   zilePredare: "30",
@@ -83,6 +86,13 @@ const sumBudget = (b) =>
   (Number(b.diurna) || 0) +
   (Number(b.cazare) || 0) +
   (Number(b.alteCheltuieli) || 0);
+
+const anexaNr = (anexaStart, numarAnexa, idx) => {
+  const ov = String(numarAnexa || "").trim();
+  if (ov) return ov;
+  const base = parseInt(anexaStart, 10);
+  return String((Number.isFinite(base) && base > 0 ? base : 1) + idx);
+};
 
 const calcDataPredare = (dataEveniment, zilePredare) => {
   if (!isValidDmy(dataEveniment) || !zilePredare) return "";
@@ -196,6 +206,25 @@ function App() {
     const n = getNextContractNumber();
     setClientData((prev) => ({ ...prev, numarContract: n }));
     await alert(`Numerotarea va continua de la ${start}.`, { variant: "success" });
+  };
+
+  const handleSetAnexaStart = async () => {
+    const cur = parseInt(clientData.anexaStart, 10);
+    const curVal = Number.isFinite(cur) && cur > 0 ? cur : 1;
+    const raw = await prompt(
+      `Introdu numărul de la care încep anexele acestui contract.\n` +
+        `Implicit: 1. Ex.: dacă există deja 3 anexe încheiate, introdu 4.`,
+      String(curVal),
+      { title: "Start nr. anexe" }
+    );
+    if (raw == null) return;
+    const v = parseInt(raw, 10);
+    if (!Number.isFinite(v) || v < 1) {
+      await alert("Număr invalid.", { variant: "danger" });
+      return;
+    }
+    setClientData((prev) => ({ ...prev, anexaStart: String(v) }));
+    await alert(`Anexele vor fi numerotate începând de la ${v}.`, { variant: "success" });
   };
 
   /* ---------- Actions ---------- */
@@ -897,6 +926,24 @@ function App() {
         setClientData((p) => ({ ...p, clauzeCustom: cc }));
       }
     };
+    const setPreviewData = (iso) => {
+      const v = normalizeDate(iso);
+      if (blankPreview) {
+        setBlankData((prev) => ({ ...prev, client: { ...prev.client, dataContract: v } }));
+      } else {
+        setClientData((p) => ({ ...p, dataContract: v }));
+      }
+    };
+    const setPreviewAnexaData = (idx, iso) => {
+      const v = normalizeDate(iso);
+      const apply = (an, i) =>
+        i === idx ? { ...an, eventData: { ...an.eventData, dataEmitere: v } } : an;
+      if (blankPreview) {
+        setBlankData((prev) => ({ ...prev, anexe: (prev.anexe || []).map(apply) }));
+      } else {
+        setAnexe((prev) => prev.map(apply));
+      }
+    };
     const showContract = printSelection === "all" || printSelection === "contract";
     const visibleAnexe =
       printSelection === "all"
@@ -963,12 +1010,13 @@ function App() {
             clientData={previewClient}
             editMode={editMode}
             onClauzeChange={setPreviewClauze}
+            onDataChange={setPreviewData}
           />
         )}
         {visibleAnexe.map((a) => (
           <Anexa
             key={a.idx}
-            anexaNumber={a.idx + 1}
+            anexaNumber={anexaNr(previewClient.anexaStart, a.eventData.numarAnexa, a.idx)}
             clientData={previewClient}
             eventData={{
               ...a.eventData,
@@ -979,6 +1027,7 @@ function App() {
             calculeazaTotal={() => sumBudget(a.budgetData)}
             editMode={editMode}
             onClauzeChange={setPreviewClauze}
+            onDataChange={(iso) => setPreviewAnexaData(a.idx, iso)}
           />
         ))}
       </div>
@@ -1148,7 +1197,7 @@ function App() {
             tabIndex={0}
           >
             <span className="nav-num">{i + 2}</span>
-            <span>Anexa {i + 1}{a.eventData.scop ? ` · ${a.eventData.scop.slice(0, 18)}` : ""}</span>
+            <span>Anexa {anexaNr(clientData.anexaStart, a.eventData.numarAnexa, i)}{a.eventData.scop ? ` · ${a.eventData.scop.slice(0, 18)}` : ""}</span>
             <span className="nav-meta">{fmt(sumBudget(a.budgetData))}</span>
             <button
               type="button"
@@ -1473,6 +1522,79 @@ function App() {
             {/* CLIENT STEP */}
             {isClient && (
               <section className="card">
+                <div
+                  className="card-strip"
+                  style={{
+                    borderTop: "none",
+                    borderBottom: "1px solid var(--line)",
+                  }}
+                >
+                  <div className="strip-cell">
+                    <div className="cell-label">Contract</div>
+                    <div className="cell-value mono">{clientData.numarContract || "—"}</div>
+                  </div>
+                  <div className="strip-cell wide">
+                    <div className="cell-label">Valabilitate</div>
+                    <div className="cell-value">
+                      Emitere <strong>{clientData.dataContract || "—"}</strong>
+                      {clientData.tipContract === "unic" ? (
+                        <> · Valabil până la predarea materialelor și încasarea integrală</>
+                      ) : (
+                        clientData.dataExpirare && <> · Valabil până la <strong>{clientData.dataExpirare}</strong></>
+                      )}
+                    </div>
+                  </div>
+                  <button type="button" className="strip-action" onClick={generateContractNumber}>
+                    Generează nr.
+                  </button>
+                  <button type="button" className="strip-action" onClick={handleSetStartNumber} title="Setează numărul de pornire pentru numerotarea automată">
+                    Start nr.
+                  </button>
+                  <button
+                    type="button"
+                    className="strip-action with-date"
+                    onClick={(e) => {
+                      const inp = e.currentTarget.querySelector('input[type="date"]');
+                      if (inp?.showPicker) inp.showPicker();
+                      else inp?.focus();
+                    }}
+                  >
+                    <span><Icon name="calendar" /></span>
+                    <span>Schimbă emiterea</span>
+                    <input
+                      type="date"
+                      tabIndex={-1}
+                      value={(() => {
+                        const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(clientData.dataContract || "");
+                        return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+                      })()}
+                      onChange={(e) => setClientData({ ...clientData, dataContract: normalizeDate(e.target.value) })}
+                    />
+                  </button>
+                  {clientData.tipContract === "cadru" && (
+                    <button
+                      type="button"
+                      className="strip-action with-date"
+                      onClick={(e) => {
+                        const inp = e.currentTarget.querySelector('input[type="date"]');
+                        if (inp?.showPicker) inp.showPicker();
+                        else inp?.focus();
+                      }}
+                    >
+                      <span><Icon name="calendar" /></span>
+                      <span>Schimbă valabilitate</span>
+                      <input
+                        type="date"
+                        tabIndex={-1}
+                        value={(() => {
+                          const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(clientData.dataExpirare || "");
+                          return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+                        })()}
+                        onChange={(e) => setClientData({ ...clientData, dataExpirare: normalizeDate(e.target.value) })}
+                      />
+                    </button>
+                  )}
+                </div>
                 <div className="section">
                   <div className="section-head">
                     <span className="idx">01</span>
@@ -1635,53 +1757,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* Strip: contract nr · valabilitate · acțiuni */}
-                <div className="card-strip">
-                  <div className="strip-cell">
-                    <div className="cell-label">Contract</div>
-                    <div className="cell-value mono">{clientData.numarContract || "—"}</div>
-                  </div>
-                  <div className="strip-cell wide">
-                    <div className="cell-label">Valabilitate</div>
-                    <div className="cell-value">
-                      Emitere <strong>{clientData.dataContract || "—"}</strong>
-                      {clientData.tipContract === "unic" ? (
-                        <> · Valabil până la predarea materialelor și încasarea integrală</>
-                      ) : (
-                        clientData.dataExpirare && <> · Valabil până la <strong>{clientData.dataExpirare}</strong></>
-                      )}
-                    </div>
-                  </div>
-                  <button type="button" className="strip-action" onClick={generateContractNumber}>
-                    Generează nr.
-                  </button>
-                  <button type="button" className="strip-action" onClick={handleSetStartNumber} title="Setează numărul de pornire pentru numerotarea automată">
-                    Start nr.
-                  </button>
-                  {clientData.tipContract === "cadru" && (
-                    <button
-                      type="button"
-                      className="strip-action with-date"
-                      onClick={(e) => {
-                        const inp = e.currentTarget.querySelector('input[type="date"]');
-                        if (inp?.showPicker) inp.showPicker();
-                        else inp?.focus();
-                      }}
-                    >
-                      <span><Icon name="calendar" /></span>
-                      <span>Schimbă valabilitate</span>
-                      <input
-                        type="date"
-                        tabIndex={-1}
-                        value={(() => {
-                          const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(clientData.dataExpirare || "");
-                          return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
-                        })()}
-                        onChange={(e) => setClientData({ ...clientData, dataExpirare: normalizeDate(e.target.value) })}
-                      />
-                    </button>
-                  )}
-                </div>
               </section>
             )}
 
@@ -1699,7 +1774,7 @@ function App() {
                         onClick={() => setStep(`anexa-${i}`)}
                       >
                         <span className="dot" />
-                        <span>Anexa {i + 1}{a.eventData.scop ? ` · ${label}` : ""}</span>
+                        <span>Anexa {anexaNr(clientData.anexaStart, a.eventData.numarAnexa, i)}{a.eventData.scop ? ` · ${label}` : ""}</span>
                         <span className="chip-val">{fmt(sumBudget(a.budgetData))}</span>
                       </button>
                     );
@@ -1714,6 +1789,89 @@ function App() {
                   {anexe.length > 1 && (
                     <button className="btn ghost danger" onClick={() => removeAnexa(anexaIdx)}>Șterge</button>
                   )}
+                </div>
+
+                <div className="card-strip">
+                  <div className="strip-cell">
+                    <div className="cell-label">Contract</div>
+                    <div className="cell-value mono">{clientData.numarContract || "—"}</div>
+                  </div>
+                  <div className="strip-cell">
+                    <div className="cell-label">Anexă nr.</div>
+                    <div className="cell-value">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={currentAnexa.eventData.numarAnexa}
+                        placeholder={anexaNr(clientData.anexaStart, "", anexaIdx)}
+                        onChange={(e) => updateAnexa(anexaIdx, "eventData", "numarAnexa", e.target.value)}
+                        style={{
+                          width: 48,
+                          padding: 0,
+                          border: "none",
+                          background: "transparent",
+                          font: "inherit",
+                          fontWeight: 700,
+                          color: "inherit",
+                          outline: "none",
+                        }}
+                        title="Gol = numerotare automată în ordine"
+                      />
+                      {!currentAnexa.eventData.numarAnexa && (
+                        <> <span style={{ color: "var(--muted)" }}>auto</span></>
+                      )}
+                    </div>
+                  </div>
+                  <div className="strip-cell wide">
+                    <div className="cell-label">Emitere anexă</div>
+                    <div className="cell-value">
+                      <strong>{currentAnexa.eventData.dataEmitere || clientData.dataContract || "—"}</strong>
+                      {!currentAnexa.eventData.dataEmitere && clientData.dataContract && (
+                        <> · <span style={{ color: "var(--muted)" }}>preia data contractului</span></>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    type="button"
+                    className="strip-action"
+                    onClick={handleSetAnexaStart}
+                    title="Numărul de la care încep anexele acestui contract"
+                  >
+                    Start nr. anexe
+                  </button>
+                  <button
+                    type="button"
+                    className="strip-action with-date"
+                    onClick={(e) => {
+                      const inp = e.currentTarget.querySelector('input[type="date"]');
+                      if (inp?.showPicker) inp.showPicker();
+                      else inp?.focus();
+                    }}
+                  >
+                    <span><Icon name="calendar" /></span>
+                    <span>Schimbă emiterea</span>
+                    <input
+                      type="date"
+                      tabIndex={-1}
+                      value={(() => {
+                        const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(currentAnexa.eventData.dataEmitere || "");
+                        return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+                      })()}
+                      onChange={(e) => updateAnexa(anexaIdx, "eventData", "dataEmitere", normalizeDate(e.target.value))}
+                    />
+                  </button>
+                  {currentAnexa.eventData.dataEmitere && (
+                    <button
+                      type="button"
+                      className="strip-action"
+                      onClick={() => updateAnexa(anexaIdx, "eventData", "dataEmitere", "")}
+                      title="Revino la data contractului"
+                    >
+                      Reset
+                    </button>
+                  )}
+                  </div>
                 </div>
 
                 <div className="section">
