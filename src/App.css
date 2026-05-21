@@ -890,7 +890,8 @@ body {
   display: block;
   margin: 0;
   width: 85mm;
-  height: 42mm;
+  height: auto;
+  max-height: 42mm;
   object-fit: contain;
   object-position: left top;
   filter: contrast(1.6) saturate(1.4);

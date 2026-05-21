@@ -945,6 +945,32 @@ function App() {
       }
     };
     const showContract = printSelection === "all" || printSelection === "contract";
+    const sanitizeFilename = (s) => (s || "").replace(/[\\/:*?"<>|]/g, "").trim();
+    const buildPdfTitle = () => {
+      const ben = sanitizeFilename(previewClient.numeBeneficiar);
+      const nrC = sanitizeFilename(previewClient.numarContract) || "fara-nr";
+      let core;
+      if (printSelection === "all") {
+        core = `Contract nr ${nrC} + anexe`;
+      } else if (printSelection === "contract") {
+        core = `Contract nr ${nrC}`;
+      } else {
+        const a = previewAnexe[printSelection];
+        const nrA = anexaNr(previewClient.anexaStart, a?.eventData?.numarAnexa, printSelection);
+        core = `Anexa nr ${nrA} la contract nr ${nrC}`;
+      }
+      return [ben, core].filter(Boolean).join(" - ");
+    };
+    const handlePrint = () => {
+      const original = document.title;
+      document.title = buildPdfTitle();
+      const restore = () => {
+        document.title = original;
+        window.removeEventListener("afterprint", restore);
+      };
+      window.addEventListener("afterprint", restore);
+      window.print();
+    };
     const visibleAnexe =
       printSelection === "all"
         ? previewAnexe.map((a, i) => ({ ...a, idx: i }))
@@ -995,7 +1021,7 @@ function App() {
                 <Icon name="save" /> Salvează ca model
               </button>
             )}
-            <button className="print-btn" onClick={() => window.print()}>Printează / PDF</button>
+            <button className="print-btn" onClick={handlePrint}>Printează / PDF</button>
           </div>
         </div>
 

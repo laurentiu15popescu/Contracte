@@ -77,7 +77,9 @@ const Anexa = ({
                 Anexa nr. {anexaNumber} la contractul nr. <strong>{nrContract}</strong> din{" "}
                 <strong>{dataCurenta}</strong>
               </h2>
-              <h3 className="text-center doc-subtitle">Comandă fermă client</h3>
+              {eventData?.scop && (
+                <h3 className="text-center doc-subtitle">{eventData.scop}</h3>
+              )}
               {editMode && onDataChange && (
                 <div
                   className="no-print"
