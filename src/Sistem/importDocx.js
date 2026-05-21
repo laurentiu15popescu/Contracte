@@ -25,8 +25,26 @@ const pick = (text, patterns) => {
   return "";
 };
 
+// Izolează blocul "Beneficiar" din preambul: de la ultimul "și" dinaintea
+// primei mențiuni a cuvântului "Beneficiar", până la sfârșit (sau până la
+// reapariția "Furnizor/Prestator/ALUMA", ca să nu prindem datele bancare ALUMA
+// din finalul contractului).
+const sliceBeneficiar = (t) => {
+  const ben = t.match(/\bbeneficiar/i);
+  if (!ben) return t;
+  const before = t.slice(0, ben.index);
+  const splits = [...before.matchAll(/\b[șs]i\b/gi)];
+  const start = splits.length ? splits[splits.length - 1].index : Math.max(0, ben.index - 600);
+  const tail = t.slice(ben.index);
+  const reFurnizor = /\b(?:furnizor|prestator|ALUMA)\b/i;
+  const mFur = tail.slice(ben[0].length).match(reFurnizor);
+  const end = mFur ? ben.index + ben[0].length + mFur.index : t.length;
+  return t.slice(start, end);
+};
+
 export const parseDocxText = (text) => {
   const t = norm(text);
+  const b = sliceBeneficiar(t);
 
   const numarContract = pick(t, [
     /(?:contract\s*(?:nr\.?|nr|num[ăa]r)\.?|nr\.?\s*contract|num[ăa]r\s*contract)\s*[:\-]?\s*([A-Za-z0-9./\-]+)/i,
@@ -41,46 +59,47 @@ export const parseDocxText = (text) => {
     ])
   );
 
-  const cui = pick(t, [
+  const cui = pick(b, [
     /\bC\.?\s*U\.?\s*I\.?\s*[:\-]?\s*(RO\s*\d{2,10}|\d{2,10})/i,
     /\bcod\s*(?:unic\s*de\s*[îi]nregistrare|fiscal)\s*[:\-]?\s*(RO\s*\d{2,10}|\d{2,10})/i,
   ]).replace(/\s+/g, "");
 
-  const nrRegCom = pick(t, [
+  const nrRegCom = pick(b, [
     /\b(?:nr\.?\s*reg\.?\s*com\.?|reg\.?\s*com\.?|registrul\s*comer[țt]ului)\s*[:\-]?\s*(J\s*\d{1,2}\s*\/\s*\d{1,6}\s*\/\s*\d{2,4})/i,
     /\b(J\s*\d{1,2}\s*\/\s*\d{1,6}\s*\/\s*\d{2,4})/i,
   ]).replace(/\s+/g, "");
 
-  const numeBeneficiar = pick(t, [
+  const numeBeneficiar = pick(b, [
     /(?:beneficiar|client|societatea|denumire)\s*[:\-]?\s*([^,\n;]{3,120}?(?:S\.?\s*R\.?\s*L\.?|S\.?\s*A\.?|S\.?\s*C\.?\s*[^,\n;]{0,80}?S\.?\s*R\.?\s*L\.?|P\.?\s*F\.?\s*A\.?))/i,
     /\b(S\.?\s*C\.?\s*[A-ZĂÂÎȘȚ][^,\n;]{2,80}?S\.?\s*R\.?\s*L\.?)/,
     /\b([A-ZĂÂÎȘȚ][A-Za-zĂÂÎȘȚăâîșț0-9 .\-&]{2,80}?\s+S\.?\s*R\.?\s*L\.?)/,
   ]);
 
-  const sediu = pick(t, [
-    /(?:sediu(?:l)?(?:\s*social)?|cu\s*sediul\s*[îi]n)\s*[:\-]?\s*([^,\n;]{5,200})/i,
-    /(?:adresa)\s*[:\-]?\s*([^,\n;]{5,200})/i,
+  // Adresele românești conțin virgule (Str., nr., Bl., Sc., Ap., oraș, județ),
+  // așa că oprim doar la următorul câmp structurat (CUI, J.., tel, email, IBAN etc.).
+  const sediu = pick(b, [
+    /(?:cu\s*sediul\s*(?:social\s*)?(?:[îi]n)?|sediu(?:l)?(?:\s*social)?|adresa)\s*[:-]?\s*([^\n;]{5,250}?)(?=\s*,?\s*(?:C\.?\s*U\.?\s*I\.?|cod\s*(?:unic|fiscal)|nr\.?\s*reg|\bJ\s*\d|tel(?:efon)?\b|e-?mail|iban|banca|cont|denumit|reprezentat|$))/i,
   ]);
 
-  const reprezentant = pick(t, [
-    /(?:reprezentat[ăa]?\s*(?:legal\s*)?(?:prin|de)|administrator|reprezentant)\s*[:\-]?\s*([A-ZĂÂÎȘȚ][A-Za-zĂÂÎȘȚăâîșț .\-]{3,80})/i,
+  const reprezentant = pick(b, [
+    /(?:reprezentat[ăa]?\s*(?:legal\s*)?(?:prin|de)|administrator|reprezentant)\s*[:\-]?\s*([A-ZĂÂÎȘȚ][A-Za-zĂÂÎȘȚăâîșț .\-]{3,80}?)(?=\s*(?:,|;|\bîn\b|\bavând\b|\bca\b|\bcu\b|tel|email|$))/i,
   ]);
 
-  const telefon = pick(t, [
+  const telefon = pick(b, [
     /(?:tel(?:efon)?\.?|mobil)\s*[:\-]?\s*(\+?\d[\d .\-/]{7,17}\d)/i,
     /\b(\+?40[\d .\-]{8,14})\b/,
     /\b(07\d{2}[ .\-]?\d{3}[ .\-]?\d{3})\b/,
   ]).replace(/[ .\-]/g, "");
 
-  const email = pick(t, [
+  const email = pick(b, [
     /([A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})/,
   ]);
 
-  const iban = pick(t, [
+  const iban = pick(b, [
     /\b(RO\d{2}[A-Z0-9 ]{16,30})\b/i,
   ]).replace(/\s+/g, "").toUpperCase();
 
-  const banca = pick(t, [
+  const banca = pick(b, [
     /(?:banca|deschis\s*la)\s*[:\-]?\s*([A-ZĂÂÎȘȚ][A-Za-zĂÂÎȘȚăâîșț .\-&]{2,60})/i,
   ]);
 

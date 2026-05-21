@@ -1028,6 +1028,11 @@ tfoot.print-footer { display: table-footer-group; }
   }
   .page-break { page-break-before: always; }
   .page-break-before { page-break-before: always; break-before: page; }
+  .doc-footer img {
+    width: 180mm;
+    max-width: 180mm;
+    margin: 0;
+  }
   @page {
     size: A4;
     margin: 15mm 10mm 18mm 20mm;
