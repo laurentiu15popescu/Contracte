@@ -63,7 +63,17 @@ export const SECTIUNI_CONTRACT = [
     id: "obiect",
     titlu: "Obiectul Contractului",
     clauze: [
-      { id: "obiect-1", text: "Obiectul prezentului contract îl constituie prestarea de servicii fotografice și videografice profesionale de către Furnizor, în cadrul evenimentelor și proiectelor organizate de Beneficiar, conform anexelor semnate de părți, în condițiile și la standardele agreate." },
+      {
+        id: "obiect-1",
+        render: ({ numar, data }) => {
+          const v = data._anyVideo;
+          return (
+            <p>
+              <strong>{numar}.</strong> Obiectul prezentului contract îl constituie prestarea de servicii fotografice{v ? " și videografice" : ""} profesionale de către Furnizor, în cadrul evenimentelor și proiectelor organizate de Beneficiar, conform anexelor semnate de părți, în condițiile și la standardele agreate.
+            </p>
+          );
+        },
+      },
       { id: "obiect-anexe", text: "Pentru fiecare serviciu sau proiect comandat în baza prezentului contract, părțile vor stabili prin anexă, după caz, natura serviciilor solicitate, data sau perioada de desfășurare, locația, durata prestației, intervalul orar, componența echipei Furnizorului, livrabilele asumate, termenul de predare, formatul materialelor livrate, prețul și orice alte condiții particulare aplicabile proiectului respectiv." },
       { id: "obiect-diligenta", text: "Furnizorul se obligă să presteze serviciile cu diligența, atenția și profesionalismul specifice unui profesionist din domeniu, în conformitate cu standardele uzuale ale industriei și cu cerințele rezonabile comunicate de Beneficiar pentru fiecare proiect." },
       { id: "obiect-prevalare", text: "Anexele semnate de părți fac parte integrantă din prezentul contract. În cazul unor neconcordanțe între prevederile generale ale contractului și prevederile specifice cuprinse într-o anexă aferentă unui anumit proiect, prevederile anexei vor prevala exclusiv cu privire la acel proiect, în măsura în care nu derogă expres de la dispozițiile esențiale ale prezentului contract." },
@@ -97,13 +107,33 @@ export const SECTIUNI_CONTRACT = [
     id: "obl-furnizor",
     titlu: "Obligațiile Furnizorului",
     clauze: [
-      { id: "of-predare-format", text: "Furnizorul se obligă să predea Beneficiarului materialele rezultate din prestarea serviciilor, respectiv fotografii și/sau materiale video, în formă finală, editată conform celor agreate de părți, pe suport digital, în formatul și la rezoluția stabilite prin prezentul contract și prin anexele aplicabile." },
+      {
+        id: "of-predare-format",
+        render: ({ numar, data }) => {
+          const v = data._anyVideo;
+          return (
+            <p>
+              <strong>{numar}.</strong> Furnizorul se obligă să predea Beneficiarului materialele rezultate din prestarea serviciilor, respectiv fotografii{v ? " și/sau materiale video" : ""}, în formă finală, editată conform celor agreate de părți, pe suport digital, în formatul și la rezoluția stabilite prin prezentul contract și prin anexele aplicabile.
+            </p>
+          );
+        },
+      },
       { id: "of-informare", text: "Furnizorul are obligația de a informa Beneficiarul de îndată ce ia cunoștință despre existența oricărei împrejurări care ar putea afecta executarea serviciilor la data, în intervalul orar sau în condițiile convenite. În cazul în care Furnizorul nu se prezintă la eveniment, refuză nejustificat executarea serviciilor sau se află în imposibilitatea de a presta serviciile și nu asigură, cu acordul prealabil al Beneficiarului, un înlocuitor cu pregătire și experiență comparabile, Beneficiarul va avea dreptul să solicite daune-interese de până la 50% din valoarea serviciilor aferente proiectului sau evenimentului afectat, fără a aduce atingere dreptului de a solicita repararea integrală a prejudiciului dovedit, în condițiile legii, în măsura în care acesta depășește cuantumul menționat." },
       { id: "of-termen", text: "Furnizorul se obligă să predea imaginile finale în termenul agreat de comun acord de părți, termen care va fi specificat în anexele contractului, în funcție de particularitățile fiecărui proiect. Termenele de livrare vor fi considerate esențiale, având în vedere utilitatea comercială și de comunicare a materialelor pentru Beneficiar." },
-      { id: "of-penalitati", text: "În cazul întârzierii livrării materialelor finale cu mai mult de 5 zile lucrătoare față de termenul convenit, Beneficiarul va avea dreptul să solicite penalități de întârziere în cuantum de 0,1% din valoarea serviciilor aferente livrării întârziate pentru fiecare zi de întârziere, fără ca valoarea totală a acestor penalități să poată depăși 10% din valoarea respectivelor servicii." },
-      { id: "of-echipament", text: "Furnizorul va utiliza numai echipament fotografic și videografic de calitate profesională, adecvat naturii serviciilor contractate, și se obligă să asigure personal calificat și suficient pentru executarea serviciilor în condițiile și la standardele convenite cu Beneficiarul." },
+      { id: "of-penalitati", text: "În cazul întârzierii livrării materialelor finale cu mai mult de **5 zile lucrătoare** față de termenul convenit, Beneficiarul va avea dreptul să solicite penalități de întârziere în cuantum de **0,1%** din valoarea serviciilor aferente livrării întârziate pentru fiecare zi de întârziere, fără ca valoarea totală a acestor penalități să poată depăși **10%** din valoarea respectivelor servicii." },
+      {
+        id: "of-echipament",
+        render: ({ numar, data }) => {
+          const v = data._anyVideo;
+          return (
+            <p>
+              <strong>{numar}.</strong> Furnizorul va utiliza numai echipament fotografic{v ? " și videografic" : ""} de calitate profesională, adecvat naturii serviciilor contractate, și se obligă să asigure personal calificat și suficient pentru executarea serviciilor în condițiile și la standardele convenite cu Beneficiarul.
+            </p>
+          );
+        },
+      },
       { id: "of-program", text: "Furnizorul se obligă să respecte programul, locația, cerințele organizatorice și instrucțiunile rezonabile comunicate de Beneficiar sau de reprezentanții desemnați ai acestuia pe durata desfășurării evenimentului, în măsura în care acestea nu contravin obiectului contractului și uzanțelor profesionale aplicabile." },
-      { id: "of-pastrare", text: "Furnizorul are obligația de a păstra imaginile în formă finală, pe suport digital la rezoluție mare, timp de 90 de zile calendaristice de la data predării acestora către Beneficiar. După expirarea acestui termen, Furnizorul nu mai răspunde pentru indisponibilitatea, pierderea sau distrugerea materialelor, Beneficiarul având obligația de a-și constitui propria arhivă în interiorul termenului menționat." },
+      { id: "of-pastrare", text: "Furnizorul are obligația de a păstra imaginile în formă finală, pe suport digital la rezoluție mare, timp de **90 de zile calendaristice** de la data predării acestora către Beneficiar. După expirarea acestui termen, Furnizorul nu mai răspunde pentru indisponibilitatea, pierderea sau distrugerea materialelor, Beneficiarul având obligația de a-și constitui propria arhivă în interiorul termenului menționat." },
       { id: "of-remediere", text: "În cazul în care materialele livrate prezintă erori tehnice evidente, sunt incomplete față de cele asumate sau nu corespund în mod substanțial cerințelor convenite, Furnizorul va avea obligația de a remedia neconformitățile într-un termen rezonabil comunicat de Beneficiar, fără costuri suplimentare pentru acesta." },
     ],
   },
@@ -119,12 +149,12 @@ export const SECTIUNI_CONTRACT = [
         id: "ob-anulare",
         text: "În considerarea faptului că Furnizorul poate rezerva data și intervalul necesare prestării serviciilor, anularea de către Beneficiar a unui proiect sau eveniment deja confirmat va atrage obligația de plată a unei compensații, după cum urmează:",
         items: [
-          "a) fără compensație, dacă anularea este notificată cu mai mult de 7 zile calendaristice înainte de data stabilită pentru prestarea serviciilor;",
-          "b) 25% din prețul serviciilor aferente proiectului sau evenimentului respectiv, dacă anularea este notificată într-un interval mai mic de 7 zile calendaristice, dar mai mare de 48 de ore înainte de data stabilită;",
-          "c) 50% din prețul serviciilor aferente proiectului sau evenimentului respectiv, dacă anularea este notificată cu mai puțin de 48 de ore înainte de data stabilită.",
+          "a) fără compensație, dacă anularea este notificată cu mai mult de **7 zile calendaristice** înainte de data stabilită pentru prestarea serviciilor;",
+          "b) **25%** din prețul serviciilor aferente proiectului sau evenimentului respectiv, dacă anularea este notificată într-un interval mai mic de **7 zile calendaristice**, dar mai mare de **48 de ore** înainte de data stabilită;",
+          "c) **50%** din prețul serviciilor aferente proiectului sau evenimentului respectiv, dacă anularea este notificată cu mai puțin de **48 de ore** înainte de data stabilită.",
         ],
       },
-      { id: "ob-intarziere", text: "În cazul întârzierii plății cu mai mult de 5 zile lucrătoare față de termenul convenit, Furnizorul va avea dreptul să solicite **penalități de întârziere în cuantum de 0,1%** din valoarea neachitată pentru fiecare zi de întârziere, fără ca valoarea totală a acestor penalități să poată depăși 10% din suma datorată." },
+      { id: "ob-intarziere", text: "În cazul întârzierii plății cu mai mult de **5 zile lucrătoare** față de termenul convenit, Furnizorul va avea dreptul să solicite **penalități de întârziere în cuantum de 0,1%** din valoarea neachitată pentru fiecare zi de întârziere, fără ca valoarea totală a acestor penalități să poată depăși **10%** din suma datorată." },
     ],
   },
 
@@ -145,8 +175,8 @@ export const SECTIUNI_CONTRACT = [
     id: "fm",
     titlu: "Forță majoră",
     clauze: [
-      { id: "fm-1", text: "Forța majoră, astfel cum este definită la art. 1.351 alin. (2) din Codul civil, respectiv orice eveniment extern, imprevizibil, absolut invincibil și inevitabil, apără de răspundere partea care o invocă. Sunt asimilate forței majore, în condițiile mai sus menționate, pandemiile, restricțiile dispuse de autorități, dezastrele naturale și actele autorităților publice care fac imposibilă executarea contractului. Intervenirea cazului de forță majoră se va comunica în scris celeilalte părți, în termen de 3 zile calendaristice de la producerea acesteia, sub sancțiunea decăderii din dreptul de a o invoca." },
-      { id: "fm-2", text: "În cazul în care evenimentul de forță majoră se prelungește pentru o perioadă mai mare de 15 zile calendaristice și executarea contractului devine imposibilă sau lipsită de utilitate pentru una dintre părți, oricare dintre părți va avea dreptul de a înceta contractul prin notificare scrisă, fără plata de despăgubiri." },
+      { id: "fm-1", text: "Forța majoră, astfel cum este definită la art. 1.351 alin. (2) din Codul civil, respectiv orice eveniment extern, imprevizibil, absolut invincibil și inevitabil, apără de răspundere partea care o invocă. Sunt asimilate forței majore, în condițiile mai sus menționate, pandemiile, restricțiile dispuse de autorități, dezastrele naturale și actele autorităților publice care fac imposibilă executarea contractului. Intervenirea cazului de forță majoră se va comunica în scris celeilalte părți, în termen de **3 zile calendaristice** de la producerea acesteia, sub sancțiunea decăderii din dreptul de a o invoca." },
+      { id: "fm-2", text: "În cazul în care evenimentul de forță majoră se prelungește pentru o perioadă mai mare de **15 zile calendaristice** și executarea contractului devine imposibilă sau lipsită de utilitate pentru una dintre părți, oricare dintre părți va avea dreptul de a înceta contractul prin notificare scrisă, fără plata de despăgubiri." },
     ],
   },
 
@@ -156,8 +186,8 @@ export const SECTIUNI_CONTRACT = [
     clauze: [
       { id: "inc-expirare", text: "Prezentul contract încetează de drept la expirarea duratei pentru care a fost încheiat, dacă părțile nu convin prelungirea sa prin act adițional." },
       { id: "inc-acord", text: "Prezentul contract poate înceta oricând prin acordul scris al părților." },
-      { id: "denuntare-unilaterala", text: "Oricare dintre părți poate denunța unilateral prezentul contract, prin notificare scrisă transmisă celeilalte părți cu cel puțin 15 zile calendaristice înainte de data încetării, fără ca o asemenea denunțare să afecteze executarea obligațiilor deja asumate prin anexele, comenzile sau proiectele aflate în curs de derulare, dacă părțile nu convin altfel în scris." },
-      { id: "inc-reziliere", text: "În cazul în care una dintre părți nu își execută sau își execută în mod necorespunzător obligațiile asumate prin prezentul contract, cealaltă parte va putea transmite o notificare scrisă prin care va solicita remedierea neexecutării într-un termen de 5 zile lucrătoare de la primirea notificării. În cazul în care neexecutarea nu este remediată în termenul acordat, partea diligentă va avea dreptul de a rezilia contractul, de plin drept, fără intervenția instanței și fără îndeplinirea altor formalități, prin simpla transmitere a unei notificări scrise." },
+      { id: "denuntare-unilaterala", text: "Oricare dintre părți poate denunța unilateral prezentul contract, prin notificare scrisă transmisă celeilalte părți cu cel puțin **15 zile calendaristice** înainte de data încetării, fără ca o asemenea denunțare să afecteze executarea obligațiilor deja asumate prin anexele, comenzile sau proiectele aflate în curs de derulare, dacă părțile nu convin altfel în scris." },
+      { id: "inc-reziliere", text: "În cazul în care una dintre părți nu își execută sau își execută în mod necorespunzător obligațiile asumate prin prezentul contract, cealaltă parte va putea transmite o notificare scrisă prin care va solicita remedierea neexecutării într-un termen de **5 zile lucrătoare** de la primirea notificării. În cazul în care neexecutarea nu este remediată în termenul acordat, partea diligentă va avea dreptul de a rezilia contractul, de plin drept, fără intervenția instanței și fără îndeplinirea altor formalități, prin simpla transmitere a unei notificări scrise." },
       { id: "inc-supravietuire", text: "Încetarea prezentului contract, indiferent de cauza acesteia, nu va aduce atingere drepturilor și obligațiilor scadente anterior datei încetării și nici prevederilor care, prin natura lor, sunt destinate să producă efecte și după încetarea raporturilor contractuale, inclusiv cele referitoare la plată, răspundere, proprietate intelectuală, confidențialitate și soluționarea litigiilor." },
     ],
   },
@@ -169,7 +199,7 @@ export const SECTIUNI_CONTRACT = [
       { id: "cf-1", text: "Părțile se obligă să păstreze confidențialitatea tuturor informațiilor de natură comercială, tehnică sau organizatorică de care iau cunoștință în executarea prezentului contract, inclusiv, dar fără a se limita la, strategii de marketing, planuri de eveniment, concepte creative, liste de clienți, condiții comerciale și orice alte informații care nu sunt publice." },
       { id: "cf-2", text: "Furnizorul se obligă să nu divulge, să nu utilizeze și să nu pună la dispoziția unor terți informațiile confidențiale ale Beneficiarului, decât în măsura strict necesară pentru executarea prezentului contract." },
       { id: "cf-3", text: "Obligația de confidențialitate nu se aplică informațiilor care: a) sunt sau devin publice fără culpa părții care le divulgă; b) au fost legal obținute dintr-o altă sursă decât cealaltă parte; c) trebuie divulgate în baza unei obligații legale sau a unei dispoziții a unei autorități competente." },
-      { id: "cf-4", text: "Obligațiile de confidențialitate prevăzute în prezentul articol rămân valabile pentru o perioadă de 3 ani de la încetarea contractului, indiferent de cauza încetării acestuia." },
+      { id: "cf-4", text: "Obligațiile de confidențialitate prevăzute în prezentul articol rămân valabile pentru o perioadă de **3 ani** de la încetarea contractului, indiferent de cauza încetării acestuia." },
       { id: "cf-5", text: "Furnizorul se obligă să se asigure că orice colaboratori sau subcontractori implicați în executarea serviciilor respectă obligații de confidențialitate cel puțin echivalente cu cele prevăzute în prezentul contract." },
     ],
   },
@@ -222,11 +252,14 @@ export const SECTIUNI_ANEXA = [
     clauze: [
       {
         id: "ax-obiect",
-        render: ({ numar, data }) => (
-          <p>
-            <strong>{numar}.</strong> Obiectul prezentei anexe, semnată la data de <strong>{data._dataCurenta}</strong>, îl constituie prestarea de servicii fotografice și videografice profesionale de către Furnizor, contra cost, în favoarea Beneficiarului.
-          </p>
-        ),
+        render: ({ numar, data }) => {
+          const v = data._event?.includeVideo;
+          return (
+            <p>
+              <strong>{numar}.</strong> Obiectul prezentei anexe, semnată la data de <strong>{data._dataCurenta}</strong>, îl constituie prestarea de servicii fotografice{v ? " și videografice" : ""} profesionale de către Furnizor, contra cost, în favoarea Beneficiarului.
+            </p>
+          );
+        },
       },
       {
         id: "ax-eveniment",
@@ -246,21 +279,35 @@ export const SECTIUNI_ANEXA = [
         id: "ax-predare",
         render: ({ numar, data }) => {
           const ph = "..............................";
+          const v = data._event?.includeVideo;
           return (
             <p>
-              <strong>{numar}.</strong> Furnizorul se obligă să predea Beneficiarului imaginile în forma finală pe suport digital la rezoluție mare, până la data de <strong>{data._event?.dataPredare || ph}</strong>.
+              <strong>{numar}.</strong> Furnizorul se obligă să predea Beneficiarului imaginile{v ? " și materialele video" : ""} în forma finală pe suport digital la rezoluție mare, până la data de <strong>{data._event?.dataPredare || ph}</strong>.
             </p>
           );
         },
       },
-      { id: "ax-pastrare", text: "Furnizorul are obligația de a păstra imaginile în forma finală pe suport digital la rezoluție mare, timp de 90 zile calendaristice de la data predării către Beneficiar. După expirarea acestui termen, Furnizorul nu mai răspunde pentru indisponibilitatea, pierderea sau distrugerea materialelor, Beneficiarul având obligația de a-și constitui propria arhivă în interiorul termenului menționat." },
+      {
+        id: "ax-pastrare",
+        render: ({ numar, data }) => {
+          const v = data._event?.includeVideo;
+          return (
+            <p>
+              <strong>{numar}.</strong> Furnizorul are obligația de a păstra imaginile{v ? " și materialele video" : ""} în forma finală pe suport digital la rezoluție mare, timp de <strong>90 zile calendaristice</strong> de la data predării către Beneficiar. După expirarea acestui termen, Furnizorul nu mai răspunde pentru indisponibilitatea, pierderea sau distrugerea materialelor, Beneficiarul având obligația de a-și constitui propria arhivă în interiorul termenului menționat.
+            </p>
+          );
+        },
+      },
       {
         id: "ax-valoare",
-        render: ({ numar, data }) => (
-          <p>
-            <strong>{numar}.</strong> Valoarea totală a serviciilor este de <strong>{data._budget?.valoareServicii || "......"} LEI</strong>, ce presupune valoarea serviciilor profesionale prestate în locație, prelucrarea digitală de baza a imaginilor și costurile privind echipamentele.
-          </p>
-        ),
+        render: ({ numar, data }) => {
+          const v = data._event?.includeVideo;
+          return (
+            <p>
+              <strong>{numar}.</strong> Valoarea totală a serviciilor este de <strong>{data._budget?.valoareServicii || "......"} LEI</strong>, ce presupune valoarea serviciilor profesionale prestate în locație, prelucrarea digitală de baza a imaginilor{v ? " și a materialelor video" : ""} și costurile privind echipamentele.
+            </p>
+          );
+        },
       },
       {
         id: "ax-cheltuieli",

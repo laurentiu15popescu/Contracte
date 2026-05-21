@@ -67,6 +67,7 @@ const emptyEvent = () => ({
   zilePredare: "30",
   zileIncasare: "10",
   observatii: "",
+  includeVideo: false,
 });
 const emptyBudget = () => ({
   valoareServicii: "",
@@ -521,51 +522,108 @@ function App() {
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
 
+    const LOGO_W = 42, LOGO_H = 42, LOGO_X = 20, LOGO_Y = 8;
+    const FOOTER_W = 180, FOOTER_H = 20, FOOTER_X = 15;
+    const FOOTER_Y = pageH - FOOTER_H - 2;
+    const CONTENT_TOP = LOGO_Y + LOGO_H + 4;
+    const CONTENT_BOTTOM = FOOTER_Y - 2;
+    const CONTENT_H = CONTENT_BOTTOM - CONTENT_TOP;
+
+    const loadImg = (src) => new Promise((res) => {
+      const im = new Image();
+      im.crossOrigin = "anonymous";
+      im.onload = () => res(im);
+      im.onerror = () => res(null);
+      im.src = src;
+    });
+    const toDataURL = (im, type) => {
+      if (!im) return null;
+      const c = document.createElement("canvas");
+      c.width = im.naturalWidth || im.width;
+      c.height = im.naturalHeight || im.height;
+      c.getContext("2d").drawImage(im, 0, 0);
+      return c.toDataURL(type);
+    };
+    const [logoImg, footerImg] = await Promise.all([loadImg("/LOGO1.png"), loadImg("/subsol3.jfif")]);
+    const logoData = toDataURL(logoImg, "image/png");
+    const footerData = toDataURL(footerImg, "image/jpeg");
+
+    const stamp = () => {
+      if (logoData) pdf.addImage(logoData, "PNG", LOGO_X, LOGO_Y, LOGO_W, LOGO_H);
+      if (footerData) pdf.addImage(footerData, "JPEG", FOOTER_X, FOOTER_Y, FOOTER_W, FOOTER_H);
+    };
+
+    let firstPdfPage = true;
+
     for (let i = 0; i < pages.length; i++) {
-      const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-      const img = canvas.toDataURL("image/jpeg", 0.92);
-      const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
-      const w = canvas.width * ratio;
-      const h = canvas.height * ratio;
-      if (i > 0) pdf.addPage();
-      pdf.addImage(img, "JPEG", (pageW - w) / 2, 0, w, h, undefined, "FAST");
+      const stripElems = pages[i].querySelectorAll(".print-header, .print-footer");
+      const oldDisplay = [];
+      stripElems.forEach((el) => { oldDisplay.push(el.style.display); el.style.display = "none"; });
+
+      let canvas;
+      try {
+        canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+      } finally {
+        stripElems.forEach((el, j) => { el.style.display = oldDisplay[j]; });
+      }
+
+      const mmPerPx = pageW / canvas.width;
+      const canvasHeightMm = canvas.height * mmPerPx;
+      const sliceHeightPx = Math.floor(CONTENT_H / mmPerPx);
+
+      if (canvasHeightMm <= CONTENT_H + 0.5) {
+        if (!firstPdfPage) pdf.addPage();
+        stamp();
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, CONTENT_TOP, pageW, canvasHeightMm, undefined, "FAST");
+        firstPdfPage = false;
+      } else {
+        let yOffset = 0;
+        while (yOffset < canvas.height) {
+          const thisSlicePx = Math.min(sliceHeightPx, canvas.height - yOffset);
+          const sliceCanvas = document.createElement("canvas");
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = thisSlicePx;
+          const ctx = sliceCanvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+          ctx.drawImage(canvas, 0, yOffset, canvas.width, thisSlicePx, 0, 0, canvas.width, thisSlicePx);
+          const sliceDataURL = sliceCanvas.toDataURL("image/jpeg", 0.92);
+          const sliceHeightMm = thisSlicePx * mmPerPx;
+
+          if (!firstPdfPage) pdf.addPage();
+          stamp();
+          pdf.addImage(sliceDataURL, "JPEG", 0, CONTENT_TOP, pageW, sliceHeightMm, undefined, "FAST");
+
+          yOffset += thisSlicePx;
+          firstPdfPage = false;
+        }
+      }
     }
     return pdf.output("blob");
   };
 
   const [pdfBusy, setPdfBusy] = useState(false);
-  const downloadPdf = async () => {
-    const fileName = `Contract_${(clientData.numarContract || "fara-numar").toString().replace(/[^\w.-]+/g, "_")}.pdf`;
-    setPdfBusy(true);
-    try {
-      const blob = await generateContractPdfBlob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
-    } catch (e) {
-      await alert("Nu am putut genera PDF-ul: " + (e?.message || e), { variant: "danger" });
-    } finally {
-      setPdfBusy(false);
-    }
-  };
 
   const sendEmail = async () => {
     const subject = `Contract nr. ${clientData.numarContract || ""} - ALUMA S.R.L.`;
     const body = `Bună ziua,\n\nVă transmitem contractul nr. ${clientData.numarContract || ""}${clientData.dataContract ? ` din ${clientData.dataContract}` : ""} împreună cu anexele aferente.\n\nVă mulțumim.\n\nCu stimă,\nALUMA S.R.L.`;
     const to = clientData.email || "";
-    const fileName = `Contract_${(clientData.numarContract || "fara-numar").toString().replace(/[^\w.-]+/g, "_")}.pdf`;
+    const sanitize = (s) => (s || "").toString().replace(/[\\/:*?"<>|]/g, "").trim();
+    const ben = sanitize(clientData.numeBeneficiar);
+    const nrC = sanitize(clientData.numarContract) || "fara-nr";
+    const dataC = sanitize(clientData.dataContract);
+    const fileName = [ben, `Contract nr ${nrC} + anexe`, dataC].filter(Boolean).join(" - ") + ".pdf";
 
     let blob;
+    setPdfBusy(true);
     try {
       blob = await generateContractPdfBlob();
     } catch (e) {
+      setPdfBusy(false);
       await alert("Nu am putut genera PDF-ul: " + (e?.message || e), { variant: "danger" });
       return;
     }
+    setPdfBusy(false);
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const file = new File([blob], fileName, { type: "application/pdf" });
@@ -949,7 +1007,9 @@ function App() {
     const buildPdfTitle = () => {
       const ben = sanitizeFilename(previewClient.numeBeneficiar);
       const nrC = sanitizeFilename(previewClient.numarContract) || "fara-nr";
+      const dataC = sanitizeFilename(previewClient.dataContract);
       let core;
+      let dataPart = dataC;
       if (printSelection === "all") {
         core = `Contract nr ${nrC} + anexe`;
       } else if (printSelection === "contract") {
@@ -958,8 +1018,9 @@ function App() {
         const a = previewAnexe[printSelection];
         const nrA = anexaNr(previewClient.anexaStart, a?.eventData?.numarAnexa, printSelection);
         core = `Anexa nr ${nrA} la contract nr ${nrC}`;
+        dataPart = sanitizeFilename(a?.eventData?.dataEmitere) || dataC;
       }
-      return [ben, core].filter(Boolean).join(" - ");
+      return [ben, core, dataPart].filter(Boolean).join(" - ");
     };
     const handlePrint = () => {
       const original = document.title;
@@ -1012,10 +1073,10 @@ function App() {
               {editMode ? "Ieși din editare" : "Editare inline"}
             </button>
             <button className="back-btn" onClick={exportDocx}>Export Word</button>
-            <button className="back-btn" onClick={downloadPdf} disabled={pdfBusy}>
-              {pdfBusy ? "Se generează…" : "⬇ Descarcă PDF"}
+            <button className="back-btn" onClick={handlePrint}>⬇ Descarcă PDF</button>
+            <button className="back-btn" onClick={sendEmail} disabled={pdfBusy}>
+              {pdfBusy ? "Se generează…" : "Trimite email"}
             </button>
-            <button className="back-btn" onClick={sendEmail}>Trimite email</button>
             {blankPreview && (
               <button className="back-btn" onClick={handleSaveAsModel} title="Salvează acest model editat pentru un client">
                 <Icon name="save" /> Salvează ca model
@@ -1034,6 +1095,7 @@ function App() {
         {showContract && (
           <Contract
             clientData={previewClient}
+            anyVideo={previewAnexe.some((a) => a?.eventData?.includeVideo)}
             editMode={editMode}
             onClauzeChange={setPreviewClauze}
             onDataChange={setPreviewData}
@@ -1915,6 +1977,14 @@ function App() {
                         onChange={(e) => updateAnexa(anexaIdx, "eventData", "scop", e.target.value)}
                       />
                     </div>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer", fontSize: 13 }}>
+                      <input
+                        type="checkbox"
+                        checked={!!currentAnexa.eventData.includeVideo}
+                        onChange={(e) => updateAnexa(anexaIdx, "eventData", "includeVideo", e.target.checked)}
+                      />
+                      Include servicii videografice
+                    </label>
                   </div>
 
                   <div className="grid-3">

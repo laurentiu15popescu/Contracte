@@ -7,7 +7,7 @@ const dmyToIso = (s) => {
   return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
 };
 
-const Contract = ({ clientData, editMode = false, onClauzeChange, onDataChange }) => {
+const Contract = ({ clientData, anyVideo = false, editMode = false, onClauzeChange, onDataChange }) => {
   const dataCurenta =
     clientData.dataContract ||
     (() => {
@@ -19,7 +19,7 @@ const Contract = ({ clientData, editMode = false, onClauzeChange, onDataChange }
   const custom = clientData.clauzeCustom?.contract || {};
   const { sectiuniFinale, idMap } = aplicaOverrides(SECTIUNI_CONTRACT, custom);
 
-  const ctxData = { ...clientData, _idMap: idMap, _dataCurenta: dataCurenta };
+  const ctxData = { ...clientData, _idMap: idMap, _dataCurenta: dataCurenta, _anyVideo: anyVideo };
 
   const setCustom = (next) => {
     if (!onClauzeChange) return;
