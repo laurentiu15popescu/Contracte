@@ -337,8 +337,7 @@ export default function ContSetari() {
         </form>
       </div>
 
-      {user.email === "laurentiu15popescu@gmail.com" && (
-        <div style={{ marginTop: 32, padding: 22, border: "1px dashed #d4a72c", borderRadius: 18, background: "#fffaf0" }}>
+      <div style={{ marginTop: 32, padding: 22, border: "1px dashed #d4a72c", borderRadius: 18, background: "#fffaf0" }}>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--text-h)" }}>
             ⚠ Migrare schemă Firestore (one-shot, admin)
           </h3>
@@ -396,8 +395,7 @@ export default function ContSetari() {
               {migLog.join("\n")}
             </pre>
           )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
