@@ -1,7 +1,7 @@
 import { db as fdb } from "./firebase";
 import {
   collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
-  query, where, onSnapshot,
+  query, where, onSnapshot, writeBatch, serverTimestamp,
 } from "firebase/firestore";
 
 // FNV-1a 32-bit — hash stabil pentru deduplicare clauze
@@ -223,3 +223,295 @@ export const importAll = async (data) => {
   }
   return count;
 };
+
+/* ============================================================================
+   NOUA SCHEMĂ — colecții: contracte/{nr} + contracte/{nr}/anexe/{i} + beneficiari/{cui}
+   Toate funcțiile noi au sufixul "V2" ca să coexiste cu cele vechi în tranziție.
+   ============================================================================ */
+
+// Sanitizare ID Firestore: nu poate conține "/" și max 1500B. Înlocuim "/" cu "-".
+const fsId = (s) => String(s || "").trim().replace(/\//g, "-");
+const lower = (s) => String(s || "").toLowerCase().trim();
+
+// Document principal contract — ID = numarContract
+export const saveContractV2 = async ({ clientData, anexe }) => {
+  const nr = fsId(clientData?.numarContract);
+  if (!nr) throw new Error("Contractul nu are număr.");
+  const now = new Date().toISOString();
+  const total = (anexe || []).reduce((s, a) => s + sumBudget(a.budgetData), 0);
+  const totalIncasat = (anexe || []).reduce(
+    (s, a) => s + (a.incasata ? (Number(a.sumaIncasata) || sumBudget(a.budgetData)) : 0),
+    0
+  );
+
+  const cui = fsId(clientData?.cui);
+  const numeBeneficiar = clientData?.numeBeneficiar || "";
+
+  const contractRef = doc(fdb, "contracte", nr);
+  const prevSnap = await getDoc(contractRef);
+  const prev = prevSnap.exists() ? prevSnap.data() : null;
+
+  const record = {
+    numarContract: nr,
+    dataContract: clientData?.dataContract || "",
+    cui,
+    numeBeneficiar,
+    numeBeneficiarLower: lower(numeBeneficiar),
+    total,
+    totalIncasat,
+    totalDatorat: Math.max(0, total - totalIncasat),
+    nrAnexe: (anexe || []).length,
+    clientData,
+    status: prev?.status || "draft",
+    dataTrimisLaSemnat: prev?.dataTrimisLaSemnat || null,
+    dataSemnare: prev?.dataSemnare || null,
+    createdAt: prev?.createdAt || now,
+    updatedAt: now,
+    deleted: prev?.deleted || false,
+  };
+
+  const batch = writeBatch(fdb);
+  batch.set(contractRef, record);
+
+  // Anexe ca subcolecție — ID = A1, A2, ... (păstrăm semantic-ul actual din evenimente/incasari)
+  // Curăță anexele vechi care nu mai apar (rename/delete în UI)
+  const oldAnexeSnap = await getDocs(collection(fdb, "contracte", nr, "anexe"));
+  const keepIds = new Set((anexe || []).map((_, i) => `A${i + 1}`));
+  oldAnexeSnap.docs.forEach((d) => {
+    if (!keepIds.has(d.id)) batch.delete(d.ref);
+  });
+
+  (anexe || []).forEach((a, i) => {
+    const anexaId = `A${i + 1}`;
+    const anexaRef = doc(fdb, "contracte", nr, "anexe", anexaId);
+    const sumaServicii = sumBudget(a.budgetData);
+    batch.set(anexaRef, {
+      anexaIndex: i + 1,
+      eventData: a.eventData || {},
+      budgetData: a.budgetData || {},
+      sumaServicii,
+      incasata: !!a.incasata,
+      dataIncasare: a.dataIncasare || null,
+      sumaIncasata: Number(a.sumaIncasata) || (a.incasata ? sumaServicii : 0),
+      nrFactura: a.nrFactura || "",
+      dataFactura: a.dataFactura || "",
+      updatedAt: now,
+    });
+  });
+
+  await batch.commit();
+
+  // Actualizează agregatul pe beneficiar (best-effort, async după commit)
+  if (cui) {
+    try { await recomputeBeneficiarAggregates(cui); } catch (e) { console.warn("beneficiari agg:", e); }
+  }
+  return nr;
+};
+
+export const setContractFlowDateV2 = async (nr, field, value) => {
+  if (!nr) return;
+  const allowed = ["dataTrimisLaSemnat", "dataSemnare"];
+  if (!allowed.includes(field)) throw new Error("Câmp neacceptat: " + field);
+  await updateDoc(doc(fdb, "contracte", fsId(nr)), {
+    [field]: value || null,
+    updatedAt: new Date().toISOString(),
+  });
+};
+
+export const setContractStatusV2 = async (nr, status) => {
+  if (!nr) return;
+  const now = new Date().toISOString();
+  const patch = { status, updatedAt: now };
+  if (status === "trimis") patch.dataTrimisLaSemnat = now;
+  if (status === "semnat") patch.dataSemnare = now;
+  await updateDoc(doc(fdb, "contracte", fsId(nr)), patch);
+};
+
+export const setAnexaIncasareV2 = async (nr, anexaIdx, payload) => {
+  // payload: { incasata, dataIncasare, sumaIncasata, nrFactura, dataFactura }
+  if (!nr) return;
+  const ref = doc(fdb, "contracte", fsId(nr), "anexe", `A${anexaIdx}`);
+  await updateDoc(ref, { ...payload, updatedAt: new Date().toISOString() });
+  // Recomp agregate pe contract + beneficiar
+  await recomputeContractTotals(nr);
+  const snap = await getDoc(doc(fdb, "contracte", fsId(nr)));
+  const cui = snap.exists() ? snap.data()?.cui : null;
+  if (cui) await recomputeBeneficiarAggregates(cui);
+};
+
+const recomputeContractTotals = async (nr) => {
+  const anexeSnap = await getDocs(collection(fdb, "contracte", fsId(nr), "anexe"));
+  let total = 0, incasat = 0;
+  anexeSnap.docs.forEach((d) => {
+    const a = d.data();
+    total += Number(a.sumaServicii) || 0;
+    if (a.incasata) incasat += Number(a.sumaIncasata) || Number(a.sumaServicii) || 0;
+  });
+  await updateDoc(doc(fdb, "contracte", fsId(nr)), {
+    total,
+    totalIncasat: incasat,
+    totalDatorat: Math.max(0, total - incasat),
+    updatedAt: new Date().toISOString(),
+  });
+};
+
+export const getContractV2 = async (nr) => {
+  if (!nr) return undefined;
+  const snap = await getDoc(doc(fdb, "contracte", fsId(nr)));
+  if (!snap.exists()) return undefined;
+  const data = { id: snap.id, ...snap.data() };
+  const anexeSnap = await getDocs(collection(fdb, "contracte", fsId(nr), "anexe"));
+  data.anexe = anexeSnap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.anexaIndex || 0) - (b.anexaIndex || 0));
+  return data;
+};
+
+export const listContracteV2 = async ({ search = "", includeDeleted = false } = {}) => {
+  const snap = await getDocs(collection(fdb, "contracte"));
+  let all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  if (!includeDeleted) all = all.filter((c) => !c.deleted);
+  all.sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  if (!search) return all;
+  const q = lower(search);
+  return all.filter(
+    (c) =>
+      (c.numeBeneficiarLower || "").includes(q) ||
+      lower(c.numarContract).includes(q) ||
+      lower(c.cui).includes(q)
+  );
+};
+
+export const subscribeContracteV2 = (cb, { onlyDrafts = false } = {}) =>
+  onSnapshot(
+    collection(fdb, "contracte"),
+    (snap) => {
+      let list = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((c) => !c.deleted);
+      if (onlyDrafts) list = list.filter((c) => (c.status || "draft") === "draft");
+      list.sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+      cb(list);
+    },
+    () => {}
+  );
+
+export const deleteContractV2 = (nr) =>
+  updateDoc(doc(fdb, "contracte", fsId(nr)), {
+    deleted: true,
+    deletedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+export const restoreContractV2 = (nr) =>
+  updateDoc(doc(fdb, "contracte", fsId(nr)), {
+    deleted: false,
+    deletedAt: null,
+    updatedAt: new Date().toISOString(),
+  });
+
+export const purgeContractV2 = async (nr) => {
+  // hard-delete + curăță subcolecția anexe
+  const id = fsId(nr);
+  const anexeSnap = await getDocs(collection(fdb, "contracte", id, "anexe"));
+  const batch = writeBatch(fdb);
+  anexeSnap.docs.forEach((d) => batch.delete(d.ref));
+  batch.delete(doc(fdb, "contracte", id));
+  await batch.commit();
+};
+
+/* ---- Beneficiari ---- */
+
+export const upsertBeneficiar = async (clientData) => {
+  const cui = fsId(clientData?.cui);
+  if (!cui) return null;
+  const now = new Date().toISOString();
+  const ref = doc(fdb, "beneficiari", cui);
+  const snap = await getDoc(ref);
+  const payload = {
+    cui,
+    numeBeneficiar: clientData?.numeBeneficiar || "",
+    numeBeneficiarLower: lower(clientData?.numeBeneficiar),
+    sediu: clientData?.sediu || "",
+    nrRegCom: clientData?.nrRegCom || "",
+    reprezentant: clientData?.reprezentant || "",
+    email: clientData?.email || "",
+    telefon: clientData?.telefon || "",
+    iban: clientData?.iban || "",
+    banca: clientData?.banca || "",
+    updatedAt: now,
+  };
+  if (snap.exists()) {
+    await updateDoc(ref, payload);
+  } else {
+    await setDoc(ref, { ...payload, createdAt: now });
+  }
+  return cui;
+};
+
+const recomputeBeneficiarAggregates = async (cui) => {
+  const cid = fsId(cui);
+  if (!cid) return;
+  const snap = await getDocs(query(collection(fdb, "contracte"), where("cui", "==", cid)));
+  const lista = snap.docs.map((d) => d.data()).filter((c) => !c.deleted);
+  let nr = 0, total = 0, incasat = 0;
+  let primul = null, ultimul = null;
+  lista.forEach((c) => {
+    nr += 1;
+    total += Number(c.total) || 0;
+    incasat += Number(c.totalIncasat) || 0;
+    if (!primul || String(c.createdAt) < String(primul.createdAt || "9999")) {
+      primul = { nr: c.numarContract, data: c.dataContract, createdAt: c.createdAt };
+    }
+    if (!ultimul || String(c.updatedAt || "") > String(ultimul.updatedAt || "")) {
+      ultimul = { nr: c.numarContract, data: c.dataContract, status: c.status, updatedAt: c.updatedAt };
+    }
+  });
+  await updateDoc(doc(fdb, "beneficiari", cid), {
+    nrContracte: nr,
+    totalIncasat: incasat,
+    totalDatorat: Math.max(0, total - incasat),
+    totalServicii: total,
+    primulContract: primul,
+    ultimulContract: ultimul,
+    updatedAt: new Date().toISOString(),
+  }).catch(async (e) => {
+    // Dacă documentul nu există încă (n-am rulat upsertBeneficiar), îl creează
+    if (e?.code === "not-found") {
+      await setDoc(doc(fdb, "beneficiari", cid), {
+        cui: cid,
+        nrContracte: nr,
+        totalIncasat: incasat,
+        totalDatorat: Math.max(0, total - incasat),
+        totalServicii: total,
+        primulContract: primul,
+        ultimulContract: ultimul,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    } else {
+      throw e;
+    }
+  });
+};
+
+export const listBeneficiari = async (search = "") => {
+  const snap = await getDocs(collection(fdb, "beneficiari"));
+  let all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  all.sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  if (!search) return all;
+  const q = lower(search);
+  return all.filter(
+    (b) =>
+      (b.numeBeneficiarLower || "").includes(q) ||
+      lower(b.cui).includes(q)
+  );
+};
+
+export const getBeneficiar = async (cui) => {
+  const snap = await getDoc(doc(fdb, "beneficiari", fsId(cui)));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : undefined;
+};
+
+export const deleteBeneficiar = (cui) => deleteDoc(doc(fdb, "beneficiari", fsId(cui)));
+
+// Re-export simbol util pentru migrare (script-ul îl folosește)
+export { serverTimestamp };

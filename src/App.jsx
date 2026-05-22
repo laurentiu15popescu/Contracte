@@ -28,7 +28,7 @@ import {
   validateCUI,
   validateIBAN,
 } from "./shared/utils";
-import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, subscribeDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel } from "./shared/db";
+import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, subscribeDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel, saveContractV2, upsertBeneficiar } from "./shared/db";
 import { extractFromDocx } from "./Sistem/importDocx";
 import { db } from "./shared/firebase";
 import { LogoutButton } from "./shared/AuthGate";
@@ -918,6 +918,15 @@ function App() {
           anexaIndex: i + 1,
           updatedAt: serverTimestamp(),
         }, { merge: true });
+      }
+
+      // Dual-write — schema nouă (contracte/{nr} + anexe + beneficiari/{cui}).
+      // Best-effort: dacă pică, NU întrerupe salvarea pe schema veche.
+      try {
+        await saveContractV2({ clientData, anexe });
+        if (clientData.cui) await upsertBeneficiar(clientData);
+      } catch (e) {
+        console.warn("Dual-write V2 a eșuat (schema veche e ok):", e);
       }
 
       if (!silent) await alert("Datele au fost salvate cu succes în Firestore.", { variant: "success" });

@@ -7,6 +7,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../shared/firebase";
+import { migrateToV2, verifyMigration } from "../shared/migrateToV2";
 import "../Dashboard/Dashboard.css";
 
 const BRAND = "#6366F1";
@@ -64,6 +65,11 @@ export default function ContSetari() {
   const [phBusy, setPhBusy] = useState(false);
   const [phErr, setPhErr] = useState("");
   const [phInfo, setPhInfo] = useState("");
+
+  const [migBusy, setMigBusy] = useState(false);
+  const [migLog, setMigLog] = useState([]);
+  const [migDryRun, setMigDryRun] = useState(true);
+  const appendLog = (line) => setMigLog((prev) => [...prev, line]);
 
   useEffect(() => {
     if (!user) return;
@@ -330,6 +336,68 @@ export default function ContSetari() {
           </button>
         </form>
       </div>
+
+      {user.email === "laurentiu15popescu@gmail.com" && (
+        <div style={{ marginTop: 32, padding: 22, border: "1px dashed #d4a72c", borderRadius: 18, background: "#fffaf0" }}>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--text-h)" }}>
+            ⚠ Migrare schemă Firestore (one-shot, admin)
+          </h3>
+          <p style={{ margin: "8px 0 14px", fontSize: 13, color: "var(--text)" }}>
+            Copiază <code>drafturi</code> + <code>statusContracte</code> + <code>users</code> (snapshot-uri client) în noua schemă
+            <code> contracte/{`{nr}`} + contracte/{`{nr}`}/anexe + beneficiari/{`{cui}`}</code>.
+            <strong> Nu șterge colecțiile vechi.</strong> Rulează întâi cu „Dry-run" ca să vezi ce se va întâmpla.
+          </p>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13 }}>
+            <input
+              type="checkbox"
+              checked={migDryRun}
+              onChange={(e) => setMigDryRun(e.target.checked)}
+            />
+            Dry-run (doar simulare, nu scrie nimic)
+          </label>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              disabled={migBusy}
+              onClick={async () => {
+                setMigBusy(true); setMigLog([]);
+                try {
+                  await migrateToV2({ onLog: appendLog, dryRun: migDryRun });
+                } catch (e) {
+                  appendLog("⚠ EROARE: " + (e?.message || e));
+                } finally {
+                  setMigBusy(false);
+                }
+              }}
+              style={{ ...primaryBtn(migBusy), alignSelf: "flex-start", marginTop: 0 }}
+            >
+              {migBusy ? "Se rulează…" : migDryRun ? "Rulează Dry-Run" : "🚨 Rulează Migrarea Reală"}
+            </button>
+            <button
+              type="button"
+              disabled={migBusy}
+              onClick={async () => {
+                setMigBusy(true); setMigLog([]);
+                try {
+                  await verifyMigration({ onLog: appendLog });
+                } catch (e) {
+                  appendLog("⚠ EROARE: " + (e?.message || e));
+                } finally {
+                  setMigBusy(false);
+                }
+              }}
+              style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 16, height: 52, padding: "0 20px", fontSize: 14, fontWeight: 700, color: "var(--text-h)", cursor: migBusy ? "default" : "pointer", opacity: migBusy ? 0.65 : 1 }}
+            >
+              Verifică (compară counts)
+            </button>
+          </div>
+          {migLog.length > 0 && (
+            <pre style={{ marginTop: 14, padding: 12, background: "#1a1815", color: "#e7e3da", borderRadius: 10, fontSize: 12, fontFamily: "Geist Mono, monospace", maxHeight: 320, overflow: "auto" }}>
+              {migLog.join("\n")}
+            </pre>
+          )}
+        </div>
+      )}
     </div>
   );
 }
