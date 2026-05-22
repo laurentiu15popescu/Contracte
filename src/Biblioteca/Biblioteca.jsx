@@ -33,13 +33,22 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
     setError("");
     try {
       const [u, e, i, sm, md] = await Promise.all([
-        getDocs(collection(db, "users")),
+        getDocs(collection(db, "contracte")),
         getDocs(collection(db, "evenimente")),
         getDocs(collection(db, "incasari")),
         getStatusMapByNumar(),
         listModele(),
       ]);
-      setUsers(u.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setUsers(u.docs
+        .filter((d) => !d.data().deleted)
+        .map((d) => {
+          const data = d.data();
+          const cd = data.clientData || {};
+          const ts = data.updatedAt
+            ? { seconds: Math.floor(new Date(data.updatedAt).getTime() / 1000) }
+            : null;
+          return { id: d.id, ...cd, ...data, updatedAt: ts };
+        }));
       setEvenimente(e.docs.map((d) => ({ id: d.id, ...d.data() })));
       setIncasari(i.docs.map((d) => ({ id: d.id, ...d.data() })));
       setStatusMap(sm);
@@ -57,7 +66,9 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
   const handleDeleteContract = async (nr) => {
     if (!(await confirm(`Ștergi contractul nr. ${nr} și toate anexele lui din Firestore?`, { variant: "danger", confirmLabel: "Șterge" }))) return;
     try {
-      await deleteDoc(doc(db, "users", nr));
+      const anexeSnap = await getDocs(collection(db, "contracte", nr, "anexe"));
+      await Promise.all(anexeSnap.docs.map((d) => deleteDoc(d.ref)));
+      await deleteDoc(doc(db, "contracte", nr));
       for (const col of ["evenimente", "incasari"]) {
         const snap = await getDocs(query(collection(db, col), where("numarContract", "==", nr)));
         await Promise.all(snap.docs.map((d) => deleteDoc(doc(db, col, d.id))));

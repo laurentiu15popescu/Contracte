@@ -54,12 +54,21 @@ export default function Dashboard({ onNewContract, onOpenContract, onGoLibrary, 
     (async () => {
       try {
         const [u, e, i] = await Promise.all([
-          getDocs(collection(db, "users")),
+          getDocs(collection(db, "contracte")),
           getDocs(collection(db, "evenimente")),
           getDocs(collection(db, "incasari")),
         ]);
         if (!alive) return;
-        setUsers(u.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setUsers(u.docs
+          .filter((d) => !d.data().deleted)
+          .map((d) => {
+            const data = d.data();
+            const cd = data.clientData || {};
+            const ts = data.updatedAt
+              ? { seconds: Math.floor(new Date(data.updatedAt).getTime() / 1000) }
+              : null;
+            return { id: d.id, ...cd, ...data, updatedAt: ts };
+          }));
         setEvenimente(e.docs.map((d) => ({ id: d.id, ...d.data() })));
         setIncasari(i.docs.map((d) => ({ id: d.id, ...d.data() })));
       } catch (err) {

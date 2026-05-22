@@ -1,7 +1,7 @@
 {
   "name": "contracte-app",
   "private": true,
-  "version": "1.0.12",
+  "version": "1.0.13",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -26,7 +26,8 @@
     "mammoth": "^1.8.0",
     "pdfjs-dist": "^4.7.76",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

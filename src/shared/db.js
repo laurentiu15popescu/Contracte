@@ -203,14 +203,66 @@ export const restoreContract = (id) =>
 export const purgeContract = (id) => deleteDoc(doc(fdb, "drafturi", String(id)));
 
 export const exportAll = async () => {
-  const snap = await getDocs(collection(fdb, "drafturi"));
-  const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  return { version: 1, exportedAt: new Date().toISOString(), contracte: all };
+  const [contracteSnap, beneficiariSnap, modeleSnap] = await Promise.all([
+    getDocs(collection(fdb, "contracte")),
+    getDocs(collection(fdb, "beneficiari")).catch(() => ({ docs: [] })),
+    getDocs(collection(fdb, "modele")).catch(() => ({ docs: [] })),
+  ]);
+  const contracte = [];
+  for (const d of contracteSnap.docs) {
+    const data = d.data();
+    const anexeSnap = await getDocs(collection(fdb, "contracte", d.id, "anexe"));
+    const anexe = anexeSnap.docs
+      .map((a) => ({ id: a.id, ...a.data() }))
+      .sort((a, b) => (a.anexaIndex || 0) - (b.anexaIndex || 0));
+    contracte.push({ id: d.id, ...data, anexe });
+  }
+  return {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    contracte,
+    beneficiari: beneficiariSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
+    modele: modeleSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
+  };
 };
 
 export const importAll = async (data) => {
   if (!data || !Array.isArray(data.contracte)) throw new Error("Format invalid");
+  const v = Number(data.version) || 1;
   let count = 0;
+
+  if (v >= 2) {
+    // Schema nouă: contracte/{nr} + anexe + beneficiari + modele
+    for (const c of data.contracte) {
+      const { id, anexe = [], ...rest } = c;
+      const nr = String(id || rest.numarContract || "").trim().replace(/\//g, "-");
+      if (!nr) continue;
+      await setDoc(doc(fdb, "contracte", nr), {
+        ...rest,
+        updatedAt: rest.updatedAt || new Date().toISOString(),
+      });
+      for (const a of anexe) {
+        const { id: aid, ...arest } = a;
+        const anexaId = aid || `A${arest.anexaIndex || 1}`;
+        await setDoc(doc(fdb, "contracte", nr, "anexe", anexaId), arest);
+      }
+      count++;
+    }
+    for (const b of (data.beneficiari || [])) {
+      const { id, ...rest } = b;
+      const cui = String(id || rest.cui || "").trim().replace(/\//g, "-");
+      if (!cui) continue;
+      await setDoc(doc(fdb, "beneficiari", cui), rest);
+    }
+    for (const m of (data.modele || [])) {
+      const { id, ...rest } = m;
+      if (!id) continue;
+      await setDoc(doc(fdb, "modele", String(id)), rest);
+    }
+    return count;
+  }
+
+  // Backup legacy (version 1) — restaurăm în drafturi cum era înainte.
   for (const c of data.contracte) {
     // eslint-disable-next-line no-unused-vars
     const { id, ...rest } = c;

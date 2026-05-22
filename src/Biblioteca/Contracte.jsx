@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { exportContracteFilteredExcel } from "../shared/excelExport";
 
 const fmt = (n) => new Intl.NumberFormat("ro-RO").format(Number(n) || 0);
 
@@ -82,16 +83,50 @@ export default function Contracte({ users, evenimente = [], incasari, onOpen, on
     );
   }, [users, totalByContract, datesByContract, search]);
 
+  const [exportBusy, setExportBusy] = useState(false);
+  const handleExportExcel = async () => {
+    if (!filtered.length) return;
+    setExportBusy(true);
+    try {
+      const nrList = filtered.map((c) => c.numarContract || c.id);
+      await exportContracteFilteredExcel(nrList);
+    } catch (e) {
+      console.error("Export Excel:", e);
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
   return (
     <>
-      <div className="field" style={{ marginBottom: 16, maxWidth: 420 }}>
-        <label>Caută (nume, CUI, număr)</label>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="ex: SC Exemplu SRL"
-        />
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <div className="field" style={{ flex: "1 1 320px", maxWidth: 420 }}>
+          <label>Caută (nume, CUI, număr)</label>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="ex: SC Exemplu SRL"
+          />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            type="button"
+            className="btn-excel"
+            onClick={handleExportExcel}
+            disabled={exportBusy || !filtered.length}
+            title="Descarcă lista filtrată ca .xlsx (Contracte + Anexe)"
+          >
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3.5" width="14" height="13" rx="1.5" />
+              <path d="M3 8h14M8 3.5v13" />
+            </svg>
+            <span>{exportBusy ? "Se exportă…" : "Export Excel"}</span>
+          </button>
+          <span style={{ fontSize: 12, color: "var(--muted)", maxWidth: 280, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+            {search.trim() ? `Filtru: «${search.trim()}»` : "Filtru: toate contractele"}
+          </span>
+        </div>
       </div>
 
       {filtered.length === 0 ? (

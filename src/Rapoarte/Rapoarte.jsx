@@ -5,6 +5,7 @@ import "../Dashboard/Dashboard.css";
 import "./Rapoarte.css";
 import { useDialog } from "../shared/Dialog";
 import Icon from "../shared/Icon";
+import { exportRapoarteExcel } from "../shared/excelExport";
 
 /* ---------- Helpers ---------- */
 const fmt = (n) => new Intl.NumberFormat("ro-RO").format(Math.round(Number(n) || 0));
@@ -70,11 +71,20 @@ export default function Rapoarte({ onOpenContract, onNewContract }) {
     setLoading(true);
     try {
       const [u, e, i] = await Promise.all([
-        getDocs(collection(db, "users")),
+        getDocs(collection(db, "contracte")),
         getDocs(collection(db, "evenimente")),
         getDocs(collection(db, "incasari")),
       ]);
-      setUsers(u.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setUsers(u.docs
+        .filter((d) => !d.data().deleted)
+        .map((d) => {
+          const data = d.data();
+          const cd = data.clientData || {};
+          const ts = data.updatedAt
+            ? { seconds: Math.floor(new Date(data.updatedAt).getTime() / 1000) }
+            : null;
+          return { id: d.id, ...cd, ...data, updatedAt: ts };
+        }));
       setEvenimente(e.docs.map((d) => ({ id: d.id, ...d.data() })));
       setIncasari(i.docs.map((d) => ({ id: d.id, ...d.data() })));
     } catch (err) {
@@ -183,6 +193,32 @@ export default function Rapoarte({ onOpenContract, onNewContract }) {
           <button onClick={() => { setFrom("2000-01-01"); setTo("2099-12-31"); }}>Tot</button>
         </div>
         <button className="rap-print no-print" onClick={() => window.print()}><Icon name="printer" /> Print / PDF</button>
+        <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            type="button"
+            className="btn-excel"
+            onClick={async () => {
+              if (!filtered.length) return;
+              try {
+                const keys = filtered.map((r) => ({ nrContract: r.nr, anexaIndex: r.anexaIndex }));
+                await exportRapoarteExcel(keys, { fromIso: from, toIso: to });
+              } catch (e) {
+                console.error("Export Rapoarte Excel:", e);
+              }
+            }}
+            disabled={!filtered.length}
+            title="Descarcă raportul filtrat ca .xlsx (Contracte + Anexe)"
+          >
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3.5" width="14" height="13" rx="1.5" />
+              <path d="M3 8h14M8 3.5v13" />
+            </svg>
+            <span>Export Excel</span>
+          </button>
+          <span style={{ fontSize: 12, color: "var(--muted)" }}>
+            Interval: {from} → {to}
+          </span>
+        </div>
       </div>
 
       {/* Sub-tabs */}

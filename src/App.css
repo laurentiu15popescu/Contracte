@@ -115,10 +115,225 @@ body {
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   font-size: 14px;
   border-right: 1px solid var(--line);
 }
+.app-sidebar .brand {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 2;
+}
+.app-sidebar .sidebar-bottom {
+  position: sticky;
+  bottom: 0;
+  background: var(--panel);
+  z-index: 2;
+  margin-top: auto;
+}
+
+/* ============================================================
+   Flux contract — tab bar editorial, sticky în content.
+   Folder-tab aesthetic + accent terracotta (cald, refined).
+   ============================================================ */
+.flux-tabs {
+  --tab-accent: #B86A45;
+  --tab-accent-2: #9A5535;
+  --tab-accent-soft: #F6EBE2;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 10px 0 0;
+  margin: -10px 0 16px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.flux-tab {
+  position: relative;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 14px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .14s ease, background .14s ease, transform .08s ease;
+  border-radius: 4px 4px 0 0;
+}
+.flux-tab:hover { color: var(--ink); background: var(--tab-accent-soft); }
+.flux-tab:active { transform: translateY(1px); }
+.flux-tab.on {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--paper);
+  box-shadow: inset 0 -2px 0 0 var(--tab-accent);
+}
+.flux-tab.on::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--paper);
+}
+.flux-tab .ft-mono {
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+.flux-tab.on .ft-mono { color: var(--tab-accent-2); }
+.flux-tab.add {
+  color: var(--ink-2);
+  padding: 8px 12px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.flux-tab.add:hover { color: var(--tab-accent-2); background: var(--tab-accent-soft); }
+.flux-tab.add svg { width: 14px; height: 14px; }
+
+.flux-overflow { position: relative; display: flex; }
+.flux-tab.overflow-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.flux-tab.overflow-trigger svg { width: 11px; height: 11px; opacity: 0.7; transition: transform .15s ease; }
+.flux-tab.overflow-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
+.flux-tab.overflow-trigger .ft-count {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 1px 6px;
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.015);
+}
+.flux-overflow-backdrop { position: fixed; inset: 0; z-index: 20; }
+.flux-overflow-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 21;
+  min-width: 320px;
+  max-width: 420px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--paper);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px -8px rgba(26, 24, 20, 0.18),
+              0 2px 6px -2px rgba(26, 24, 20, 0.08);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: flux-pop .14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes flux-pop {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.flux-overflow-item {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 5px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.3;
+  cursor: pointer;
+  color: var(--ink-2);
+  transition: background .1s ease, color .1s ease;
+}
+.flux-overflow-item:hover {
+  background: var(--tab-accent-soft);
+  color: var(--ink);
+}
+.flux-overflow-item.active {
+  background: var(--tab-accent-soft);
+  color: var(--ink);
+}
+.flux-overflow-item.active .oi-num { color: var(--tab-accent-2); }
+.flux-overflow-item.visible { opacity: 0.45; }
+.flux-overflow-item.visible:hover { opacity: 1; }
+.flux-overflow-item .oi-num {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.flux-overflow-item .oi-label {
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flux-overflow-item .oi-val {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* Buton Export Excel — verde "data export", folder-tab consistency */
+.btn-excel {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid #1F7A3B;
+  background: linear-gradient(180deg, #22A656 0%, #1F7A3B 100%);
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset,
+              0 1px 2px rgba(31, 122, 59, 0.25);
+  transition: transform .08s ease, box-shadow .14s ease, filter .14s ease;
+}
+.btn-excel:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset,
+              0 4px 12px rgba(31, 122, 59, 0.28);
+}
+.btn-excel:active:not(:disabled) { transform: translateY(1px); }
+.btn-excel:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-excel svg { width: 14px; height: 14px; }
+.btn-excel .be-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+.btn-excel span:first-of-type { /* main label */ font-variant-numeric: tabular-nums; }
+
 .app-sidebar .nav-item { padding: 7px 10px; font-size: 13px; color: var(--ink-2); font-weight: 500; }
 .app-sidebar .nav-item:hover { background: rgba(42,38,34,0.05); color: var(--ink); }
 .app-sidebar .nav-item.active { background: rgba(59,91,219,0.10); color: var(--ink); }

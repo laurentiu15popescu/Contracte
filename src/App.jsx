@@ -29,6 +29,7 @@ import {
   validateIBAN,
 } from "./shared/utils";
 import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, subscribeDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel, saveContractV2, upsertBeneficiar } from "./shared/db";
+import { exportAllExcel } from "./shared/excelExport";
 import { extractFromDocx } from "./Sistem/importDocx";
 import { db } from "./shared/firebase";
 import { LogoutButton } from "./shared/AuthGate";
@@ -43,6 +44,7 @@ import { useDialog } from "./shared/Dialog";
 /* ---------- empty factories (neschimbate) ---------- */
 const emptyClient = () => ({
   tipContract: "cadru",
+  includeVideo: false,
   numarContract: "",
   anexaStart: "",
   dataContract: todayDmy(),
@@ -141,6 +143,13 @@ function App() {
   const backupFileRef = useRef(null);
   const fileRef = useRef(null);
   const docFileRef = useRef(null);
+  const [fluxOverflowOpen, setFluxOverflowOpen] = useState(false);
+  useEffect(() => { setFluxOverflowOpen(false); }, [step]);
+
+  /* Auto-save în preview: dirty flag + debounce. */
+  const [isDirty, setIsDirty] = useState(false);
+  const autoSaveTimerRef = useRef(null);
+  const autoSaveInFlightRef = useRef(false);
   const locationTimerRef = useRef(null);
   const [currentContractId, setCurrentContractId] = useState(stored?.currentContractId || null);
   const [drafturi, setDrafturi] = useState([]);
@@ -272,12 +281,13 @@ function App() {
   };
   const handleOpenFromFirestore = async (nr) => {
     try {
-      const snap = await getDoc(doc(db, "users", nr));
+      const snap = await getDoc(doc(db, "contracte", nr));
       if (!snap.exists()) {
         await alert("Contractul nu a fost găsit în Firestore.", { variant: "warning" });
         return;
       }
-      const cd = snap.data();
+      const data = snap.data();
+      const cd = data.clientData || data;
       const [evSnap, incSnap] = await Promise.all([
         getDocs(query(collection(db, "evenimente"), where("numarContract", "==", nr))),
         getDocs(query(collection(db, "incasari"), where("numarContract", "==", nr))),
@@ -605,6 +615,7 @@ function App() {
   const [pdfBusy, setPdfBusy] = useState(false);
 
   const sendEmail = async () => {
+    await flushAutoSave();
     const subject = `Contract nr. ${clientData.numarContract || ""} - ALUMA S.R.L.`;
     const body = `Bună ziua,\n\nVă transmitem contractul nr. ${clientData.numarContract || ""}${clientData.dataContract ? ` din ${clientData.dataContract}` : ""} împreună cu anexele aferente.\n\nVă mulțumim.\n\nCu stimă,\nALUMA S.R.L.`;
     const to = clientData.email || "";
@@ -654,6 +665,7 @@ function App() {
 
   const exportDocx = async () => {
     try {
+      await flushAutoSave();
       const source = document.querySelector(".preview-container");
       if (!source) return;
 
@@ -882,11 +894,6 @@ function App() {
       return;
     }
     try {
-      await setDoc(doc(db, "users", nr), {
-        ...clientData,
-        updatedAt: serverTimestamp(),
-      });
-
       const keepIds = new Set(anexe.map((_, i) => `${nr}_A${i + 1}`));
       for (const col of ["evenimente", "incasari"]) {
         const snap = await getDocs(query(collection(db, col), where("numarContract", "==", nr)));
@@ -937,6 +944,39 @@ function App() {
     }
   };
 
+  const doAutoSave = async () => {
+    if (blankPreview) return;
+    if (!clientData.numarContract) return;
+    if (autoSaveInFlightRef.current) return;
+    autoSaveInFlightRef.current = true;
+    try {
+      await salveazaContract({ silent: true });
+      setIsDirty(false);
+    } catch (e) {
+      console.warn("Auto-save:", e?.message || e);
+    } finally {
+      autoSaveInFlightRef.current = false;
+    }
+  };
+  const scheduleAutoSave = () => {
+    if (blankPreview) return;
+    setIsDirty(true);
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSaveTimerRef.current = null;
+      doAutoSave();
+    }, 2000);
+  };
+  const flushAutoSave = async () => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    if (isDirty || autoSaveInFlightRef.current) {
+      await doAutoSave();
+    }
+  };
+
   const handleGenerate = (selection = "all") => {
     const errs = validate();
     setErrors(errs);
@@ -944,6 +984,7 @@ function App() {
       saveClientHistory(clientData);
       setPrintSelection(selection);
       setShowPreview(true);
+      doAutoSave();
     }
   };
 
@@ -991,6 +1032,7 @@ function App() {
         setBlankData((prev) => ({ ...prev, client: { ...prev.client, clauzeCustom: cc } }));
       } else {
         setClientData((p) => ({ ...p, clauzeCustom: cc }));
+        scheduleAutoSave();
       }
     };
     const setPreviewData = (iso) => {
@@ -999,6 +1041,7 @@ function App() {
         setBlankData((prev) => ({ ...prev, client: { ...prev.client, dataContract: v } }));
       } else {
         setClientData((p) => ({ ...p, dataContract: v }));
+        scheduleAutoSave();
       }
     };
     const setPreviewAnexaData = (idx, iso) => {
@@ -1009,6 +1052,7 @@ function App() {
         setBlankData((prev) => ({ ...prev, anexe: (prev.anexe || []).map(apply) }));
       } else {
         setAnexe((prev) => prev.map(apply));
+        scheduleAutoSave();
       }
     };
     const showContract = printSelection === "all" || printSelection === "contract";
@@ -1031,7 +1075,8 @@ function App() {
       }
       return [ben, core, dataPart].filter(Boolean).join(" - ");
     };
-    const handlePrint = () => {
+    const handlePrint = async () => {
+      await flushAutoSave();
       const original = document.title;
       document.title = buildPdfTitle();
       const restore = () => {
@@ -1051,9 +1096,14 @@ function App() {
     return (
       <div className="preview-container">
         <div className="no-print print-controls">
-          <button className="back-btn" onClick={() => { setShowPreview(false); setBlankPreview(false); }}>
+          <button className="back-btn" onClick={async () => { await flushAutoSave(); setShowPreview(false); setBlankPreview(false); }}>
             ← Înapoi la editare
           </button>
+          {!blankPreview && isDirty && (
+            <span title="Modificări nesalvate — se salvează automat" style={{ alignSelf: "center", padding: "4px 10px", background: "#FEF3C7", color: "#92400E", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
+              · nesalvat
+            </span>
+          )}
           {blankPreview && (
             <span style={{ alignSelf: "center", padding: "4px 10px", background: "#FEF3C7", color: "#92400E", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
               MODEL BLANK · pentru pre-acord client
@@ -1104,7 +1154,7 @@ function App() {
         {showContract && (
           <Contract
             clientData={previewClient}
-            anyVideo={previewAnexe.some((a) => a?.eventData?.includeVideo)}
+            anyVideo={!!clientData.includeVideo || previewAnexe.some((a) => a?.eventData?.includeVideo)}
             editMode={editMode}
             onClauzeChange={setPreviewClauze}
             onDataChange={setPreviewData}
@@ -1252,7 +1302,7 @@ function App() {
         >
           <img src="/LOGO1.png" alt="Ioana Apostol" className="brand-logo" draggable="false" />
           <div className="brand-name">Aluma</div>
-          <div className="brand-sub">v2.6</div>
+          <div className="brand-sub">v{__APP_VERSION__}</div>
         </div>
 
         <div className="nav-section-label">Panou</div>
@@ -1277,42 +1327,14 @@ function App() {
         >Flux contract</div>
 
         <button
-          className={`nav-item ${isClient ? "active" : ""}`}
+          className={`nav-item ${isClient || isAnnex ? "active" : ""}`}
           onClick={() => setStep("client")}
         >
-          <span className="nav-num">1</span>
-          <span>Beneficiar</span>
-          {clientData.numeBeneficiar && <span className="nav-meta">✓</span>}
+          <span><Icon name="folder" /> Editor contract</span>
+          {anexe.length > 0 && <span className="nav-meta">{anexe.length}</span>}
         </button>
-
-        {anexe.map((a, i) => (
-          <div
-            key={i}
-            className={`nav-item ${step === `anexa-${i}` ? "active" : ""}`}
-            onClick={() => setStep(`anexa-${i}`)}
-            role="button"
-            tabIndex={0}
-          >
-            <span className="nav-num">{i + 2}</span>
-            <span>Anexa {anexaNr(clientData.anexaStart, a.eventData.numarAnexa, i)}{a.eventData.scop ? ` · ${a.eventData.scop.slice(0, 18)}` : ""}</span>
-            <span className="nav-meta">{fmt(sumBudget(a.budgetData))}</span>
-            <button
-              type="button"
-              className="nav-del"
-              title="Șterge anexa"
-              onClick={async (e) => {
-                e.stopPropagation();
-                if (!(await confirm(`Ștergi Anexa ${i + 1}?`, { variant: "danger", confirmLabel: "Șterge" }))) return;
-                setAnexe((prev) => prev.filter((_, j) => j !== i));
-                setStep("client");
-              }}
-            >×</button>
-          </div>
-        ))}
-
-        <button className="nav-item" onClick={addAnexa}>
-          <span className="nav-num">+</span>
-          <span style={{ color: "#8b8478" }}>Adaugă anexă</span>
+        <button className="nav-item" onClick={handleNewContract}>
+          <span><Icon name="plus" /> Contract nou</span>
         </button>
 
         <div
@@ -1346,9 +1368,6 @@ function App() {
           role="button"
           tabIndex={0}
         >Sistem</div>
-        <button className="nav-item" onClick={handleNewContract}>
-          <span>＋ Contract nou</span>
-        </button>
         <button className="nav-item" onClick={onExport}>
           <span><Icon name="download" /> Export JSON</span>
         </button>
@@ -1555,8 +1574,16 @@ function App() {
             title="Sistem"
             subtitle="Operațiuni asupra datelor — backup, import, export."
             cards={[
-              { color: "#6366F1", icon: "＋", label: "Contract nou", desc: "Pornește un contract gol", onClick: handleNewContract },
               { color: "#10B981", icon: <Icon name="download" />, label: "Export JSON", desc: "Exportă contractul curent", onClick: onExport },
+              { color: "#1F7A3B", icon: <Icon name="download" />, label: "Export Excel", desc: "Workbook .xlsx — TOATE contractele, anexele și beneficiarii (fără filtre)", onClick: async () => {
+                if (!(await confirm("Vei exporta TOATE contractele, anexele și beneficiarii (fără filtre). Continui?", { confirmLabel: "Exportă tot" }))) return;
+                try {
+                  const r = await exportAllExcel();
+                  await alert(`Export complet: ${r.contracte} contracte, ${r.anexe} anexe, ${r.beneficiari} beneficiari.`, { variant: "success" });
+                } catch (e) {
+                  await alert("Eroare la export Excel: " + e.message, { variant: "danger" });
+                }
+              } },
               { color: "#34CAE8", icon: <Icon name="upload" />, label: "Import JSON", desc: "Încarcă contract din JSON", onClick: () => fileRef.current?.click() },
               { color: "#F59E0B", icon: <Icon name="download" />, label: "Backup DB", desc: "Backup integral baza locală", onClick: handleExportBackup },
               { color: "#EF4444", icon: <Icon name="upload" />, label: "Restaurează backup", desc: "Restaurează din backup", onClick: () => backupFileRef.current?.click() },
@@ -1572,6 +1599,108 @@ function App() {
         {/* Content */}
         {!isDashboard && !isRapoarte && !isHub && !isCont && (
         <div className={`content ${isSaved ? "single" : ""}`}>
+
+          {/* Flux tabs (sticky) */}
+          {!isSaved && (isClient || isAnnex) && (() => {
+            const N = anexe.length;
+            const W = 5;
+            let start, end;
+            if (N <= W) { start = 0; end = N; }
+            else if (anexaIdx == null) { start = N - W; end = N; }
+            else {
+              start = Math.max(0, Math.min(anexaIdx - 2, N - W));
+              end = start + W;
+            }
+            const hiddenBefore = anexe.slice(0, start).map((a, i) => ({ a, i }));
+            const hiddenAfter = anexe.slice(end).map((a, i) => ({ a, i: end + i }));
+            const hidden = [...hiddenBefore, ...hiddenAfter];
+            const canAddAnexa = !(clientData.tipContract === "unic" && anexe.length >= 1);
+            return (
+              <div className="flux-tabs">
+                <button
+                  type="button"
+                  className={`flux-tab ${isClient ? "on" : ""}`}
+                  onClick={() => setStep("client")}
+                >Beneficiar</button>
+                {anexe.slice(start, end).map((a, i) => {
+                  const idx = start + i;
+                  const active = step === `anexa-${idx}`;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`flux-tab ${active ? "on" : ""}`}
+                      title={a.eventData.scop || `Anexa ${idx + 1}`}
+                      onClick={() => setStep(`anexa-${idx}`)}
+                    >
+                      <span className="ft-mono">A{anexaNr(clientData.anexaStart, a.eventData.numarAnexa, idx)}</span>
+                    </button>
+                  );
+                })}
+                {hidden.length > 0 && (
+                  <div className="flux-overflow">
+                    <button
+                      type="button"
+                      className="flux-tab overflow-trigger"
+                      aria-expanded={fluxOverflowOpen}
+                      onClick={() => setFluxOverflowOpen((v) => !v)}
+                      title="Toate anexele"
+                    >
+                      <span className="ft-count">{N}</span>
+                      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 4.5l3 3 3-3" />
+                      </svg>
+                    </button>
+                    {fluxOverflowOpen && (
+                      <>
+                        <div className="flux-overflow-backdrop" onClick={() => setFluxOverflowOpen(false)} />
+                        <div className="flux-overflow-menu">
+                          {anexe.map((a, i) => {
+                            const visible = i >= start && i < end;
+                            const active = step === `anexa-${i}`;
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                className={`flux-overflow-item ${visible ? "visible" : ""} ${active ? "active" : ""}`}
+                                onClick={() => { setStep(`anexa-${i}`); setFluxOverflowOpen(false); }}
+                              >
+                                <span className="oi-num">A{anexaNr(clientData.anexaStart, a.eventData.numarAnexa, i)}</span>
+                                <span className="oi-label">{a.eventData.scop || "—"}</span>
+                                <span className="oi-val">{fmt(sumBudget(a.budgetData))}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                {canAddAnexa && (
+                  <button
+                    type="button"
+                    className="flux-tab add"
+                    onClick={addAnexa}
+                    title="Adaugă anexă"
+                  >
+                    <Icon name="plus" />
+                    <span>Anexă</span>
+                  </button>
+                )}
+                <div style={{ flex: 1 }} />
+                {isAnnex && (
+                  <>
+                    {canAddAnexa && (
+                      <button type="button" className="btn ghost btn-sm" onClick={() => duplicateAnexa(anexaIdx)}>Duplică</button>
+                    )}
+                    {anexe.length > 1 && (
+                      <button type="button" className="btn ghost danger btn-sm" onClick={() => removeAnexa(anexaIdx)}>Șterge</button>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Page head */}
           {!isSaved && (
@@ -1748,6 +1877,15 @@ function App() {
                     </div>
                   </div>
 
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 14, cursor: "pointer", fontSize: 13 }}>
+                    <input
+                      type="checkbox"
+                      checked={!!clientData.includeVideo}
+                      onChange={(e) => setClientData((prev) => ({ ...prev, includeVideo: e.target.checked }))}
+                    />
+                    Include servicii videografice (la nivel de contract)
+                  </label>
+
                   <div className="grid-2">
                     <div className="field">
                       <label>CUI / CNP <span className="req">●</span></label>
@@ -1860,34 +1998,6 @@ function App() {
             {/* ANEXA STEP */}
             {isAnnex && (
               <section className="card">
-                <div className="anexa-chips">
-                  {anexe.map((a, i) => {
-                    const active = step === `anexa-${i}`;
-                    const label = a.eventData.scop || `Anexa ${i + 1}`;
-                    return (
-                      <button
-                        key={i}
-                        className={`chip ${active ? "on" : ""}`}
-                        onClick={() => setStep(`anexa-${i}`)}
-                      >
-                        <span className="dot" />
-                        <span>Anexa {anexaNr(clientData.anexaStart, a.eventData.numarAnexa, i)}{a.eventData.scop ? ` · ${label}` : ""}</span>
-                        <span className="chip-val">{fmt(sumBudget(a.budgetData))}</span>
-                      </button>
-                    );
-                  })}
-                  {!(clientData.tipContract === "unic" && anexe.length >= 1) && (
-                    <button className="chip add" onClick={addAnexa}>+ Anexă nouă</button>
-                  )}
-                  <div style={{ flex: 1 }} />
-                  {!(clientData.tipContract === "unic" && anexe.length >= 1) && (
-                    <button className="btn ghost" onClick={() => duplicateAnexa(anexaIdx)}>Duplică</button>
-                  )}
-                  {anexe.length > 1 && (
-                    <button className="btn ghost danger" onClick={() => removeAnexa(anexaIdx)}>Șterge</button>
-                  )}
-                </div>
-
                 <div className="card-strip">
                   <div className="strip-cell">
                     <div className="cell-label">Contract</div>
