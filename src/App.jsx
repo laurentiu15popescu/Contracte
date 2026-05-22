@@ -348,10 +348,24 @@ function App() {
     if (!file) return;
     try {
       const { parsed, missing } = await extractFromDocx(file);
-      setClientData((prev) => ({ ...emptyClient(), ...prev, ...parsed }));
+      // Banca o derivăm din IBAN (parser-ul nu mai întoarce banca).
+      const bancaFromIban = parsed.iban ? bankFromIban(parsed.iban) : "";
+      setClientData((prev) => ({ ...emptyClient(), ...prev, ...parsed, banca: bancaFromIban }));
       setAnexe([emptyAnexa()]);
       setCurrentContractId(null);
       setStep("client");
+      // Auto-trigger ANAF dacă CUI-ul importat e valid (firme, nu CNP) — suprascrie cu date oficiale.
+      if (parsed.cui && validateCUI(parsed.cui)) {
+        const clean = String(parsed.cui).replace(/^RO/i, "").trim();
+        if (/^\d{2,10}$/.test(clean)) {
+          fetchAnaf(parsed.cui)
+            .then((d) => {
+              setClientData((prev) => ({ ...prev, ...d }));
+              setAnafSyncAt(new Date());
+            })
+            .catch((err) => console.warn("ANAF auto-import:", err.message));
+        }
+      }
       if (missing.length) {
         await alert(
           "Import .docx OK. Câmpuri NEdetectate (completează manual): " +

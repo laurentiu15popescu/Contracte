@@ -60,8 +60,8 @@ export const parseDocxText = (text) => {
   );
 
   const cui = pick(b, [
-    /\bC\.?\s*U\.?\s*I\.?\s*[:\-]?\s*(RO\s*\d{2,10}|\d{2,10})/i,
-    /\bcod\s*(?:unic\s*de\s*[îi]nregistrare|fiscal)\s*[:\-]?\s*(RO\s*\d{2,10}|\d{2,10})/i,
+    /\bC\.?\s*[UI]\.?\s*[FI]\.?\s*[:\-]?\s*(RO\s*\d{2,10}|\d{2,10})/i,
+    /\bcod\s*(?:unic\s*de\s*[îi]nregistrare|fiscal|de\s*[îi]nregistrare\s*fiscal[ăa])\s*[:\-]?\s*(RO\s*\d{2,10}|\d{2,10})/i,
   ]).replace(/\s+/g, "");
 
   const nrRegCom = pick(b, [
@@ -78,7 +78,7 @@ export const parseDocxText = (text) => {
   // Adresele românești conțin virgule (Str., nr., Bl., Sc., Ap., oraș, județ),
   // așa că oprim doar la următorul câmp structurat (CUI, J.., tel, email, IBAN etc.).
   const sediu = pick(b, [
-    /(?:cu\s*sediul\s*(?:social\s*)?(?:[îi]n)?|sediu(?:l)?(?:\s*social)?|adresa)\s*[:-]?\s*([^\n;]{5,250}?)(?=\s*,?\s*(?:C\.?\s*U\.?\s*I\.?|cod\s*(?:unic|fiscal)|nr\.?\s*reg|\bJ\s*\d|tel(?:efon)?\b|e-?mail|iban|banca|cont|denumit|reprezentat|$))/i,
+    /(?:cu\s*sediul\s*(?:social\s*)?(?:[îi]n)?|sediu(?:l)?(?:\s*social)?|adresa)\s*[:-]?\s*([^\n;]{5,250}?)(?=\s*,?\s*(?:C\.?\s*[UI]\.?\s*[FI]\.?|cod\s*(?:unic|fiscal|de\s*[îi]nregistrare)|nr\.?\s*reg|nr\.?\s*(?:de\s*)?ordine|registrul\s*comer|[îi]nmatricul|\bJ\s*\d|tel(?:efon)?\b|e-?mail|iban|banca|cont|denumit|reprezentat|sub\s*nr|$))/i,
   ]);
 
   const reprezentant = pick(b, [
@@ -99,9 +99,9 @@ export const parseDocxText = (text) => {
     /\b(RO\d{2}[A-Z0-9 ]{16,30})\b/i,
   ]).replace(/\s+/g, "").toUpperCase();
 
-  const banca = pick(b, [
-    /(?:banca|deschis\s*la)\s*[:\-]?\s*([A-ZĂÂÎȘȚ][A-Za-zĂÂÎȘȚăâîșț .\-&]{2,60})/i,
-  ]);
+  // Banca NU se mai extrage din text — e nesigură (capta "r nr. RO..." etc.).
+  // În UI se derivează automat din IBAN via bankFromIban (BIC pozițiile 5-8).
+  const banca = "";
 
   return {
     numarContract,
