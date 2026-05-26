@@ -15,6 +15,11 @@ if (SENTRY_DSN) {
     tracesSampleRate: 0.1,
     replaysOnErrorSampleRate: 0,
     replaysSessionSampleRate: 0,
+    ignoreErrors: [
+      'AbortError',
+      'The user aborted a request',
+      'signal is aborted without reason',
+    ],
   })
 }
 

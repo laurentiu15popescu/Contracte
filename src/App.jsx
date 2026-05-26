@@ -28,7 +28,7 @@ import {
   validateCUI,
   validateIBAN,
 } from "./shared/utils";
-import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, subscribeDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel, saveContractV2, upsertBeneficiar } from "./shared/db";
+import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, subscribeDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel, saveContractV2, upsertBeneficiar, listBeneficiari } from "./shared/db";
 import { exportAllExcel } from "./shared/excelExport";
 import { extractFromDocx } from "./Sistem/importDocx";
 import { db } from "./shared/firebase";
@@ -153,6 +153,11 @@ function App() {
   const locationTimerRef = useRef(null);
   const [currentContractId, setCurrentContractId] = useState(stored?.currentContractId || null);
   const [drafturi, setDrafturi] = useState([]);
+  const [beneficiariV2, setBeneficiariV2] = useState([]);
+  const reloadBeneficiariV2 = () => {
+    listBeneficiari().then(setBeneficiariV2).catch(() => { /* silent */ });
+  };
+  useEffect(() => { reloadBeneficiariV2(); }, []);
   const [search, setSearch] = useState("");
   const [bnrConv, setBnrConv] = useState({ currency: "EUR", rate: null, date: "", loading: false, error: "" });
 
@@ -269,6 +274,7 @@ function App() {
     }
 
     if (localOk || cloudOk) {
+      reloadBeneficiariV2();
       const n = getNextContractNumber();
       const freshClient = { ...emptyClient(), numarContract: n };
       const freshAnexe = [emptyAnexa()];
@@ -1874,20 +1880,46 @@ function App() {
                     </div>
                     <div className="field">
                       <label>Client salvat</label>
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          const c = findClientByCui(e.target.value);
-                          if (c) setClientData((prev) => ({ ...prev, ...c }));
-                        }}
-                      >
-                        <option value="">— alege din istoric ({listClientHistory().length}) —</option>
-                        {listClientHistory().map((c) => (
-                          <option key={c.cui} value={c.cui}>
-                            {c.numeBeneficiar} ({c.cui})
-                          </option>
-                        ))}
-                      </select>
+                      {(() => {
+                        const map = new Map();
+                        for (const c of listClientHistory()) {
+                          if (c?.cui) map.set(c.cui, c);
+                        }
+                        for (const b of beneficiariV2) {
+                          if (b?.cui) map.set(b.cui, { ...(map.get(b.cui) || {}), ...b });
+                        }
+                        const lista = Array.from(map.values()).sort((a, b) =>
+                          String(a.numeBeneficiar || "").localeCompare(String(b.numeBeneficiar || ""), "ro")
+                        );
+                        return (
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              const c = map.get(e.target.value);
+                              if (!c) return;
+                              setClientData((prev) => ({
+                                ...prev,
+                                numeBeneficiar: c.numeBeneficiar || "",
+                                cui: c.cui || "",
+                                nrRegCom: c.nrRegCom || "",
+                                sediu: c.sediu || "",
+                                reprezentant: c.reprezentant || "",
+                                telefon: c.telefon || "",
+                                email: c.email || "",
+                                iban: c.iban || "",
+                                banca: c.banca || "",
+                              }));
+                            }}
+                          >
+                            <option value="">— alege din istoric ({lista.length}) —</option>
+                            {lista.map((c) => (
+                              <option key={c.cui} value={c.cui}>
+                                {c.numeBeneficiar || "(fără nume)"} ({c.cui})
+                              </option>
+                            ))}
+                          </select>
+                        );
+                      })()}
                     </div>
                   </div>
 
