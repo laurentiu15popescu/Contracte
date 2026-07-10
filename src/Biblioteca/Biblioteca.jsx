@@ -1,7 +1,18 @@
 import { useEffect, useState, useCallback } from "react";
-import { collection, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "../shared/firebase";
-import { getStatusMapByNumar, setContractStatusByNumar, listModele } from "../shared/db";
+import {
+  getStatusMapByNumar,
+  setContractStatusByNumar,
+  listModele,
+} from "../shared/db";
 import Contracte from "./Contracte";
 import Clienti from "./Clienti";
 import Modele from "./Modele";
@@ -15,11 +26,14 @@ const TABS = [
   { id: "modele", label: "Modele", icon: "folder" },
 ];
 
-export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseModel, onOpenBlank }) {
+export default function Biblioteca({
+  onOpen,
+  tab: tabProp,
+  onUseModel,
+  onOpenBlank,
+}) {
   const { alert, confirm } = useDialog();
-  const [tabLocal, setTabLocal] = useState("contracte");
-  const tab = tabProp ?? tabLocal;
-  const setTab = onTabChange ?? setTabLocal;
+  const tab = tabProp ?? "contracte";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [users, setUsers] = useState([]);
@@ -27,6 +41,14 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
   const [incasari, setIncasari] = useState([]);
   const [statusMap, setStatusMap] = useState({});
   const [modele, setModele] = useState([]);
+  const [sort, setSort] = useState({ key: "updatedAt", dir: "desc" });
+
+  const handleSort = (key) => {
+    setSort((prev) => ({
+      key,
+      dir: prev.key === key && prev.dir === "desc" ? "asc" : "desc",
+    }));
+  };
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -39,16 +61,22 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
         getStatusMapByNumar(),
         listModele(),
       ]);
-      setUsers(u.docs
-        .filter((d) => !d.data().deleted)
-        .map((d) => {
-          const data = d.data();
-          const cd = data.clientData || {};
-          const ts = data.updatedAt
-            ? { seconds: Math.floor(new Date(data.updatedAt).getTime() / 1000) }
-            : null;
-          return { id: d.id, ...cd, ...data, updatedAt: ts };
-        }));
+      setUsers(
+        u.docs
+          .filter((d) => !d.data().deleted)
+          .map((d) => {
+            const data = d.data();
+            const cd = data.clientData || {};
+            const ts = data.updatedAt
+              ? {
+                  seconds: Math.floor(
+                    new Date(data.updatedAt).getTime() / 1000,
+                  ),
+                }
+              : null;
+            return { id: d.id, ...cd, ...data, updatedAt: ts };
+          }),
+      );
       setEvenimente(e.docs.map((d) => ({ id: d.id, ...d.data() })));
       setIncasari(i.docs.map((d) => ({ id: d.id, ...d.data() })));
       setStatusMap(sm);
@@ -61,16 +89,37 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
     }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (tab === "clienti") {
+      setSort({ key: "numeBeneficiar", dir: "asc" });
+    } else {
+      setSort({ key: "updatedAt", dir: "desc" });
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [tab]);
 
   const handleDeleteContract = async (nr) => {
-    if (!(await confirm(`Ștergi contractul nr. ${nr} și toate anexele lui din Firestore?`, { variant: "danger", confirmLabel: "Șterge" }))) return;
+    if (
+      !(await confirm(
+        `Ștergi contractul nr. ${nr} și toate anexele lui din Firestore?`,
+        { variant: "danger", confirmLabel: "Șterge" },
+      ))
+    )
+      return;
     try {
       const anexeSnap = await getDocs(collection(db, "contracte", nr, "anexe"));
       await Promise.all(anexeSnap.docs.map((d) => deleteDoc(d.ref)));
       await deleteDoc(doc(db, "contracte", nr));
       for (const col of ["evenimente", "incasari"]) {
-        const snap = await getDocs(query(collection(db, col), where("numarContract", "==", nr)));
+        const snap = await getDocs(
+          query(collection(db, col), where("numarContract", "==", nr)),
+        );
         await Promise.all(snap.docs.map((d) => deleteDoc(doc(db, col, d.id))));
       }
       refresh();
@@ -83,12 +132,17 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
     try {
       const n = await setContractStatusByNumar(nr, status);
       if (!n) {
-        await alert("Contractul nu a putut fi actualizat. Deschide-l și salvează-l mai întâi.", { variant: "warning" });
+        await alert(
+          "Contractul nu a putut fi actualizat. Deschide-l și salvează-l mai întâi.",
+          { variant: "warning" },
+        );
         return;
       }
       setStatusMap((m) => ({ ...m, [nr]: status }));
     } catch (err) {
-      await alert("Eroare la schimbarea statusului: " + err.message, { variant: "danger" });
+      await alert("Eroare la schimbarea statusului: " + err.message, {
+        variant: "danger",
+      });
     }
   };
 
@@ -111,7 +165,11 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
             <h1>{active.label}</h1>
             <p>{subtitle}</p>
           </div>
-          <button className="dash-hero-cta" onClick={refresh} disabled={loading}>
+          <button
+            className="dash-hero-cta"
+            onClick={refresh}
+            disabled={loading}
+          >
             <Icon name="refresh" /> Reîmprospătează
           </button>
         </div>
@@ -119,7 +177,9 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
 
       <div className="section">
         {error && (
-          <div className="errors"><strong>Eroare:</strong> {error}</div>
+          <div className="errors">
+            <strong>Eroare:</strong> {error}
+          </div>
         )}
 
         {!loading && !error && tab === "contracte" && (
@@ -131,6 +191,8 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
             onDelete={handleDeleteContract}
             statusMap={statusMap}
             onStatusChange={handleStatusChange}
+            sort={sort}
+            onSort={handleSort}
           />
         )}
 
@@ -140,10 +202,14 @@ export default function Biblioteca({ onOpen, tab: tabProp, onTabChange, onUseMod
             evenimente={evenimente}
             incasari={incasari}
             onOpen={onOpen}
+            sort={sort}
+            onSort={handleSort}
           />
         )}
 
-        {tab === "modele" && <Modele onUseModel={onUseModel} onOpenBlank={onOpenBlank} />}
+        {tab === "modele" && (
+          <Modele onUseModel={onUseModel} onOpenBlank={onOpenBlank} />
+        )}
       </div>
     </div>
   );

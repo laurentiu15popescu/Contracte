@@ -1328,7 +1328,8 @@ tfoot.print-footer { display: table-footer-group; }
   font-size: 12px;
   color: var(--ink-2);
 }
-.card-strip .strip-cell { display: flex; flex-direction: column; gap: 2px; }
+.card-strip .strip-cell { display: flex; flex-direction: column; gap: 2px; align-items: center; text-align: center; }
+.card-strip .strip-cell input { text-align: center; }
 .card-strip .strip-cell.wide { flex: 1; }
 .card-strip .cell-label {
   font-size: 10px;

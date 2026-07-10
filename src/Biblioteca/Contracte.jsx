@@ -4,7 +4,7 @@ import { exportContracteFilteredExcel } from "../shared/excelExport";
 const fmt = (n) => new Intl.NumberFormat("ro-RO").format(Number(n) || 0);
 
 const parseDmy = (s) => {
-  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(s || "");
+  const m = /^(\d{2})[-.](\d{2})[-.](\d{4})$/.exec(s || "");
   return m ? new Date(`${m[3]}-${m[2]}-${m[1]}`) : null;
 };
 const toDmy = (d) => {
@@ -13,7 +13,11 @@ const toDmy = (d) => {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   return `${dd}-${mm}-${d.getFullYear()}`;
 };
-const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const addDays = (d, n) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
 
 const DEFAULT_ZILE_INCASARE = 10;
 
@@ -25,13 +29,39 @@ const STATUS_COLORS = {
   finalizat: "#10B981",
 };
 
-export default function Contracte({ users, evenimente = [], incasari, onOpen, onDelete, statusMap = {}, onStatusChange }) {
+const SortableHeader = ({ children, sortKey, sort, onSort, style }) => {
+  if (!sort || !onSort) return <th style={style}>{children}</th>;
+  const isActive = sort.key === sortKey;
+  const icon = isActive ? (sort.dir === "asc" ? "▲" : "▼") : "";
+  return (
+    <th
+      onClick={() => onSort(sortKey)}
+      style={{ cursor: "pointer", userSelect: "none", ...style }}
+    >
+      {children}
+      {icon && <span style={{ fontSize: "0.8em", marginLeft: 4 }}>{icon}</span>}
+    </th>
+  );
+};
+
+export default function Contracte({
+  users,
+  evenimente = [],
+  incasari,
+  onOpen,
+  onDelete,
+  statusMap = {},
+  onStatusChange,
+  sort,
+  onSort,
+}) {
   const [search, setSearch] = useState("");
 
   const totalByContract = useMemo(() => {
     const map = {};
     incasari.forEach((r) => {
-      map[r.numarContract] = (map[r.numarContract] || 0) + (Number(r.total) || 0);
+      map[r.numarContract] =
+        (map[r.numarContract] || 0) + (Number(r.total) || 0);
     });
     return map;
   }, [incasari]);
@@ -72,16 +102,68 @@ export default function Contracte({ users, evenimente = [], incasari, onOpen, on
         ...u,
         total: totalByContract[key] || 0,
         dates: datesByContract[key] || null,
+        status: statusMap[key] || "draft",
       };
     });
-    if (!q) return list;
-    return list.filter(
-      (u) =>
-        (u.numeBeneficiar || "").toLowerCase().includes(q) ||
-        (u.cui || "").toLowerCase().includes(q) ||
-        (u.numarContract || "").toLowerCase().includes(q)
-    );
-  }, [users, totalByContract, datesByContract, search]);
+
+    let result = list;
+    if (q) {
+      result = list.filter(
+        (u) =>
+          (u.numeBeneficiar || "").toLowerCase().includes(q) ||
+          (u.cui || "").toLowerCase().includes(q) ||
+          (u.numarContract || "").toLowerCase().includes(q),
+      );
+    }
+
+    if (!sort || !sort.key) return result;
+
+    return [...result].sort((a, b) => {
+      let valA, valB;
+
+      if (sort.key === "numarContract") {
+        const numA = parseInt(a.numarContract, 10);
+        const numB = parseInt(b.numarContract, 10);
+        if (Number.isFinite(numA) && Number.isFinite(numB)) {
+          return sort.dir === "asc" ? numA - numB : numB - numA;
+        }
+        valA = a.numarContract || a.id || "";
+        valB = b.numarContract || b.id || "";
+      } else if (sort.key === "dataContract") {
+        const dateA = parseDmy(a.dataContract) || new Date(0);
+        const dateB = parseDmy(b.dataContract) || new Date(0);
+        return sort.dir === "asc" ? dateA - dateB : dateB - dateA;
+      } else if (sort.key === "dataPredare") {
+        const dateA = parseDmy(a.dates?.dataPredare) || new Date(0);
+        const dateB = parseDmy(b.dates?.dataPredare) || new Date(0);
+        return sort.dir === "asc" ? dateA - dateB : dateB - dateA;
+      } else if (sort.key === "zileIncasare") {
+        valA = a.dates?.zileIncasare || 0;
+        valB = b.dates?.zileIncasare || 0;
+      } else if (sort.key === "total") {
+        valA = a.total || 0;
+        valB = b.total || 0;
+      } else if (sort.key === "status") {
+        valA = a.status || "";
+        valB = b.status || "";
+      } else if (sort.key === "updatedAt") {
+        const timeA = a.updatedAt?.seconds ? a.updatedAt.seconds * 1000 : new Date(a.updatedAt || 0).getTime();
+        const timeB = b.updatedAt?.seconds ? b.updatedAt.seconds * 1000 : new Date(b.updatedAt || 0).getTime();
+        return sort.dir === "asc" ? timeA - timeB : timeB - timeA;
+      } else {
+        valA = a[sort.key] || "";
+        valB = b[sort.key] || "";
+      }
+
+      let comparison;
+      if (typeof valA === "number" && typeof valB === "number") {
+        comparison = valA - valB;
+      } else {
+        comparison = String(valA).localeCompare(String(valB), "ro");
+      }
+      return sort.dir === "asc" ? comparison : -comparison;
+    });
+  }, [users, totalByContract, datesByContract, search, sort, statusMap]);
 
   const [exportBusy, setExportBusy] = useState(false);
   const handleExportExcel = async () => {
@@ -99,7 +181,15 @@ export default function Contracte({ users, evenimente = [], incasari, onOpen, on
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          gap: 12,
+          marginBottom: 16,
+          flexWrap: "wrap",
+        }}
+      >
         <div className="field" style={{ flex: "1 1 320px", maxWidth: 420 }}>
           <label>Caută (nume, CUI, număr)</label>
           <input
@@ -117,41 +207,66 @@ export default function Contracte({ users, evenimente = [], incasari, onOpen, on
             disabled={exportBusy || !filtered.length}
             title="Descarcă lista filtrată ca .xlsx (Contracte + Anexe)"
           >
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <rect x="3" y="3.5" width="14" height="13" rx="1.5" />
               <path d="M3 8h14M8 3.5v13" />
             </svg>
             <span>{exportBusy ? "Se exportă…" : "Export Excel"}</span>
           </button>
-          <span style={{ fontSize: 12, color: "var(--muted)", maxWidth: 280, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
-            {search.trim() ? `Filtru: «${search.trim()}»` : "Filtru: toate contractele"}
+          <span
+            style={{
+              fontSize: 12,
+              color: "var(--muted)",
+              maxWidth: 280,
+              textOverflow: "ellipsis",
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {search.trim()
+              ? `Filtru: «${search.trim()}»`
+              : "Filtru: toate contractele"}
           </span>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <p style={{ color: "var(--muted)" }}>Nicio înregistrare în Firestore.</p>
+        <p style={{ color: "var(--muted)" }}>
+          Nicio înregistrare în Firestore.
+        </p>
       ) : (
         <table className="table-saved">
           <thead>
             <tr>
-              <th>Nr.</th>
-              <th>Data</th>
-              <th>Beneficiar</th>
-              <th>CUI</th>
-              <th>Predare materiale</th>
-              <th>Termen plată (zile lucr.)</th>
-              <th style={{ textAlign: "right" }}>Total</th>
-              <th>Status</th>
+              <SortableHeader sortKey="numarContract" sort={sort} onSort={onSort}>Nr.</SortableHeader>
+              <SortableHeader sortKey="dataContract" sort={sort} onSort={onSort}>Data</SortableHeader>
+              <SortableHeader sortKey="numeBeneficiar" sort={sort} onSort={onSort}>Beneficiar</SortableHeader>
+              <SortableHeader sortKey="cui" sort={sort} onSort={onSort}>CUI</SortableHeader>
+              <SortableHeader sortKey="dataPredare" sort={sort} onSort={onSort}>Predare materiale</SortableHeader>
+              <SortableHeader sortKey="zileIncasare" sort={sort} onSort={onSort}>Termen plată (zile cal.)</SortableHeader>
+              <SortableHeader sortKey="total" sort={sort} onSort={onSort} style={{ textAlign: "right" }}>Total</SortableHeader>
+              <SortableHeader sortKey="status" sort={sort} onSort={onSort}>Status</SortableHeader>
               <th>Acțiuni</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((c) => {
               const d = c.dates;
-              const suffix = d && d.totalAnexe > 1
-                ? <span style={{ color: "var(--muted)", fontSize: 11 }}> · A{d.anexaIndex}/{d.totalAnexe}</span>
-                : null;
+              const suffix =
+                d && d.totalAnexe > 1 ? (
+                  <span style={{ color: "var(--muted)", fontSize: 11 }}>
+                    {" "}
+                    · A{d.anexaIndex}/{d.totalAnexe}
+                  </span>
+                ) : null;
               return (
                 <tr key={c.id}>
                   <td className="num">{c.numarContract || c.id}</td>
@@ -159,12 +274,19 @@ export default function Contracte({ users, evenimente = [], incasari, onOpen, on
                   <td>{c.numeBeneficiar || "—"}</td>
                   <td className="num">{c.cui || "—"}</td>
                   <td className="num">
-                    {d ? <>{d.dataPredare}{suffix}</> : "—"}
+                    {d ? (
+                      <>
+                        {d.dataPredare}
+                        {suffix}
+                      </>
+                    ) : (
+                      "—"
+                    )}
                   </td>
-                  <td className="num">
-                    {d ? `${d.zileIncasare} zile` : "—"}
+                  <td className="num">{d ? `${d.zileIncasare} zile` : "—"}</td>
+                  <td className="num" style={{ textAlign: "right" }}>
+                    {fmt(c.total)} LEI
                   </td>
-                  <td className="num" style={{ textAlign: "right" }}>{fmt(c.total)} LEI</td>
                   <td>
                     {(() => {
                       const nr = c.numarContract || c.id;
@@ -172,7 +294,9 @@ export default function Contracte({ users, evenimente = [], incasari, onOpen, on
                       return (
                         <select
                           value={cur}
-                          onChange={(e) => onStatusChange && onStatusChange(nr, e.target.value)}
+                          onChange={(e) =>
+                            onStatusChange && onStatusChange(nr, e.target.value)
+                          }
                           style={{
                             padding: "4px 8px",
                             borderRadius: 6,
@@ -185,7 +309,9 @@ export default function Contracte({ users, evenimente = [], incasari, onOpen, on
                           }}
                         >
                           {STATUS_STEPS.map((s) => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
                           ))}
                         </select>
                       );
@@ -193,8 +319,18 @@ export default function Contracte({ users, evenimente = [], incasari, onOpen, on
                   </td>
                   <td>
                     <div className="actions-cell">
-                      <button className="btn" onClick={() => onOpen(c.numarContract || c.id)}>Deschide</button>
-                      <button className="btn danger" onClick={() => onDelete(c.numarContract || c.id)}>Șterge</button>
+                      <button
+                        className="btn"
+                        onClick={() => onOpen(c.numarContract || c.id)}
+                      >
+                        Deschide
+                      </button>
+                      <button
+                        className="btn danger"
+                        onClick={() => onDelete(c.numarContract || c.id)}
+                      >
+                        Șterge
+                      </button>
                     </div>
                   </td>
                 </tr>

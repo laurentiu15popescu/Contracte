@@ -19,7 +19,6 @@ const Anexa = ({
 }) => {
   const dataCurenta =
     eventData?.dataEmitere ||
-    clientData.dataContract ||
     (() => {
       const d = new Date();
       return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
@@ -75,7 +74,7 @@ const Anexa = ({
             <td>
               <h2 className="doc-title">
                 Anexa nr. {anexaNumber} la contractul nr. <strong>{nrContract}</strong> din{" "}
-                <strong>{dataCurenta}</strong>
+                <strong>{clientData.dataContract || "......"}</strong>
               </h2>
               {eventData?.scop && (
                 <h3 className="text-center doc-subtitle">{eventData.scop}</h3>

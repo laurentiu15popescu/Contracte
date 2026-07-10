@@ -4,7 +4,6 @@ import Contract from "./FluxContract/Contract";
 import Anexa from "./FluxContract/Anexa";
 import Icon from "./shared/Icon";
 import {
-  addDays,
   addMonths,
   bankFromIban,
   exportJSON,
@@ -28,12 +27,37 @@ import {
   validateCUI,
   validateIBAN,
 } from "./shared/utils";
-import { saveContract, exportAll, importAll, getContractByNumar, markContractTrimis, listDrafturi, subscribeDrafturi, getContract, deleteContract, saveModel, listModele, getModeleByCui, getModel, deleteModel, saveContractV2, upsertBeneficiar, listBeneficiari } from "./shared/db";
+import {
+  saveContract,
+  exportAll,
+  importAll,
+  getContractByNumar,
+  markContractTrimis,
+  listDrafturi,
+  subscribeDrafturi,
+  getContract,
+  deleteContract,
+  saveModel,
+  getModeleByCui,
+  saveContractV2,
+  upsertBeneficiar,
+  listBeneficiari,
+} from "./shared/db";
 import { exportAllExcel } from "./shared/excelExport";
 import { extractFromDocx } from "./Sistem/importDocx";
 import { db } from "./shared/firebase";
 import { LogoutButton } from "./shared/AuthGate";
-import { doc, setDoc, deleteDoc, getDocs, getDoc, query, where, collection, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  deleteDoc,
+  getDocs,
+  getDoc,
+  query,
+  where,
+  collection,
+  serverTimestamp,
+} from "firebase/firestore";
 import Biblioteca from "./Biblioteca/Biblioteca";
 import Dashboard from "./Dashboard/Dashboard";
 import Rapoarte from "./Rapoarte/Rapoarte";
@@ -97,11 +121,6 @@ const anexaNr = (anexaStart, numarAnexa, idx) => {
   return String((Number.isFinite(base) && base > 0 ? base : 1) + idx);
 };
 
-const calcDataPredare = (dataEveniment, zilePredare) => {
-  if (!isValidDmy(dataEveniment) || !zilePredare) return "";
-  return addDays(dataEveniment, 1 + Number(zilePredare));
-};
-
 // adaugă N zile lucrătoare la o dată dmy (zz-ll-aaaa) și returnează dmy
 const addBusinessDaysDmy = (dmy, n) => {
   const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(dmy || "");
@@ -116,25 +135,33 @@ const addBusinessDaysDmy = (dmy, n) => {
   return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
 };
 
+const calcDataPredare = (dataEveniment, zilePredare) => {
+  if (!isValidDmy(dataEveniment) || !zilePredare) return "";
+  return addBusinessDaysDmy(dataEveniment, zilePredare);
+};
+
 const calcTermenIncasare = (dataEveniment, zilePredare, zileIncasare) => {
   const predare = calcDataPredare(dataEveniment, zilePredare);
   return predare ? addBusinessDaysDmy(predare, zileIncasare) : "";
 };
 
-const fmt = (n) =>
-  new Intl.NumberFormat("ro-RO").format(Number(n) || 0);
+const fmt = (n) => new Intl.NumberFormat("ro-RO").format(Number(n) || 0);
 
 function App() {
   const { alert, confirm, prompt } = useDialog();
   const stored = loadLocal();
   const [step, setStep] = useState("dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
-  useEffect(() => { setMenuOpen(false); }, [step]); // închide drawer-ul la navigare (mobil)
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [step]); // închide drawer-ul la navigare (mobil)
   const [showPreview, setShowPreview] = useState(false);
   const [blankPreview, setBlankPreview] = useState(false);
   const [blankData, setBlankData] = useState(null);
   const [printSelection, setPrintSelection] = useState("all");
-  const [clientData, setClientData] = useState(stored?.clientData || emptyClient());
+  const [clientData, setClientData] = useState(
+    stored?.clientData || emptyClient(),
+  );
   const [anexe, setAnexe] = useState(stored?.anexe || [emptyAnexa()]);
   const [errors, setErrors] = useState([]);
   const [editMode, setEditMode] = useState(false);
@@ -144,22 +171,38 @@ function App() {
   const fileRef = useRef(null);
   const docFileRef = useRef(null);
   const [fluxOverflowOpen, setFluxOverflowOpen] = useState(false);
-  useEffect(() => { setFluxOverflowOpen(false); }, [step]);
+  useEffect(() => {
+    setFluxOverflowOpen(false);
+  }, [step]);
 
   /* Auto-save în preview: dirty flag + debounce. */
   const [isDirty, setIsDirty] = useState(false);
   const autoSaveTimerRef = useRef(null);
   const autoSaveInFlightRef = useRef(false);
   const locationTimerRef = useRef(null);
-  const [currentContractId, setCurrentContractId] = useState(stored?.currentContractId || null);
+  const [currentContractId, setCurrentContractId] = useState(
+    stored?.currentContractId || null,
+  );
   const [drafturi, setDrafturi] = useState([]);
   const [beneficiariV2, setBeneficiariV2] = useState([]);
   const reloadBeneficiariV2 = () => {
-    listBeneficiari().then(setBeneficiariV2).catch(() => { /* silent */ });
+    listBeneficiari()
+      .then(setBeneficiariV2)
+      .catch(() => {
+        /* silent */
+      });
   };
-  useEffect(() => { reloadBeneficiariV2(); }, []);
+  useEffect(() => {
+    reloadBeneficiariV2();
+  }, []);
   const [search, setSearch] = useState("");
-  const [bnrConv, setBnrConv] = useState({ currency: "EUR", rate: null, date: "", loading: false, error: "" });
+  const [bnrConv, setBnrConv] = useState({
+    currency: "EUR",
+    rate: null,
+    date: "",
+    loading: false,
+    error: "",
+  });
 
   useEffect(() => {
     saveLocal({ clientData, anexe });
@@ -175,7 +218,10 @@ function App() {
   }, [currentContractId]);
   useEffect(() => {
     const h = (e) => {
-      if (savedSnapRef.current !== null && liveSnapRef.current !== savedSnapRef.current) {
+      if (
+        savedSnapRef.current !== null &&
+        liveSnapRef.current !== savedSnapRef.current
+      ) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -196,11 +242,11 @@ function App() {
     if (didInitNrRef.current) return;
     didInitNrRef.current = true;
     if (!clientData.numarContract && !currentContractId) {
-      const n = getNextContractNumber();
-      setClientData((prev) => (prev.numarContract ? prev : { ...prev, numarContract: n }));
+      setClientData((prev) =>
+        prev.numarContract ? prev : { ...prev, numarContract: getNextContractNumber() },
+      );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [clientData.numarContract, currentContractId]);
 
   const handleSetStartNumber = async () => {
     const next = peekNextContractNumber();
@@ -209,7 +255,7 @@ function App() {
         `Următorul nr. ar fi: ${next}.\n` +
         `Ex.: dacă ai emis deja până la 42, introdu 43.`,
       String(next),
-      { title: "Setează numerotarea" }
+      { title: "Setează numerotarea" },
     );
     if (raw == null) return;
     const v = parseInt(raw, 10);
@@ -220,7 +266,9 @@ function App() {
     const start = setContractCounterStart(v);
     const n = getNextContractNumber();
     setClientData((prev) => ({ ...prev, numarContract: n }));
-    await alert(`Numerotarea va continua de la ${start}.`, { variant: "success" });
+    await alert(`Numerotarea va continua de la ${start}.`, {
+      variant: "success",
+    });
   };
 
   const handleSetAnexaStart = async () => {
@@ -230,7 +278,7 @@ function App() {
       `Introdu numărul de la care încep anexele acestui contract.\n` +
         `Implicit: 1. Ex.: dacă există deja 3 anexe încheiate, introdu 4.`,
       String(curVal),
-      { title: "Start nr. anexe" }
+      { title: "Start nr. anexe" },
     );
     if (raw == null) return;
     const v = parseInt(raw, 10);
@@ -239,7 +287,9 @@ function App() {
       return;
     }
     setClientData((prev) => ({ ...prev, anexaStart: String(v) }));
-    await alert(`Anexele vor fi numerotate începând de la ${v}.`, { variant: "success" });
+    await alert(`Anexele vor fi numerotate începând de la ${v}.`, {
+      variant: "success",
+    });
   };
 
   /* ---------- Actions ---------- */
@@ -249,7 +299,11 @@ function App() {
     let cloudOk = false;
 
     try {
-      const id = await saveContract({ clientData, anexe, id: currentContractId });
+      const id = await saveContract({
+        clientData,
+        anexe,
+        id: currentContractId,
+      });
       setCurrentContractId(id);
       localOk = true;
     } catch (e) {
@@ -264,13 +318,21 @@ function App() {
     }
 
     if (localOk && cloudOk) {
-      await alert("Contract salvat local și în Firestore.", { variant: "success" });
+      await alert("Contract salvat local și în Firestore.", {
+        variant: "success",
+      });
     } else if (localOk) {
-      await alert("Salvat local, dar a eșuat în cloud.\n" + errs.join("\n"), { variant: "warning" });
+      await alert("Salvat local, dar a eșuat în cloud.\n" + errs.join("\n"), {
+        variant: "warning",
+      });
     } else if (cloudOk) {
-      await alert("Salvat în cloud, dar a eșuat local.\n" + errs.join("\n"), { variant: "warning" });
+      await alert("Salvat în cloud, dar a eșuat local.\n" + errs.join("\n"), {
+        variant: "warning",
+      });
     } else {
-      await alert("Eroare la salvare:\n" + errs.join("\n"), { variant: "danger" });
+      await alert("Eroare la salvare:\n" + errs.join("\n"), {
+        variant: "danger",
+      });
     }
 
     if (localOk || cloudOk) {
@@ -289,23 +351,38 @@ function App() {
     try {
       const snap = await getDoc(doc(db, "contracte", nr));
       if (!snap.exists()) {
-        await alert("Contractul nu a fost găsit în Firestore.", { variant: "warning" });
+        await alert("Contractul nu a fost găsit în Firestore.", {
+          variant: "warning",
+        });
         return;
       }
       const data = snap.data();
       const cd = data.clientData || data;
       const [evSnap, incSnap] = await Promise.all([
-        getDocs(query(collection(db, "evenimente"), where("numarContract", "==", nr))),
-        getDocs(query(collection(db, "incasari"), where("numarContract", "==", nr))),
+        getDocs(
+          query(collection(db, "evenimente"), where("numarContract", "==", nr)),
+        ),
+        getDocs(
+          query(collection(db, "incasari"), where("numarContract", "==", nr)),
+        ),
       ]);
-      const ev = evSnap.docs.map((d) => d.data()).sort((a, b) => (a.anexaIndex || 0) - (b.anexaIndex || 0));
+      const ev = evSnap.docs
+        .map((d) => d.data())
+        .sort((a, b) => (a.anexaIndex || 0) - (b.anexaIndex || 0));
       const inc = incSnap.docs.map((d) => d.data());
       const strip = (obj, keys) => {
         const out = { ...obj };
         keys.forEach((k) => delete out[k]);
         return out;
       };
-      const META = ["anexaIndex", "numarContract", "cuiBeneficiar", "updatedAt", "createdAt", "total"];
+      const META = [
+        "anexaIndex",
+        "numarContract",
+        "cuiBeneficiar",
+        "updatedAt",
+        "createdAt",
+        "total",
+      ];
       const loadedAnexe = ev.length
         ? ev.map((e) => {
             const i = inc.find((x) => x.anexaIndex === e.anexaIndex) || {};
@@ -315,7 +392,10 @@ function App() {
             };
           })
         : [emptyAnexa()];
-      setClientData({ ...emptyClient(), ...strip(cd, ["updatedAt", "createdAt"]) });
+      setClientData({
+        ...emptyClient(),
+        ...strip(cd, ["updatedAt", "createdAt"]),
+      });
       setAnexe(loadedAnexe);
       const localRec = await getContractByNumar(nr);
       setCurrentContractId(localRec?.id ?? null);
@@ -332,8 +412,10 @@ function App() {
     if (!file) return;
     try {
       const data = await importJSON(file);
-      if (data.clientData) setClientData({ ...emptyClient(), ...data.clientData });
-      if (Array.isArray(data.anexe)) setAnexe(data.anexe.length ? data.anexe : [emptyAnexa()]);
+      if (data.clientData)
+        setClientData({ ...emptyClient(), ...data.clientData });
+      if (Array.isArray(data.anexe))
+        setAnexe(data.anexe.length ? data.anexe : [emptyAnexa()]);
       setCurrentContractId(null);
     } catch {
       await alert("Fișier invalid.", { variant: "danger" });
@@ -342,7 +424,10 @@ function App() {
   };
 
   const handleNewContract = async () => {
-    if (!(await confirm("Începi un contract nou? Datele curente vor fi golite."))) return;
+    if (
+      !(await confirm("Începi un contract nou? Datele curente vor fi golite."))
+    )
+      return;
     const n = getNextContractNumber();
     setClientData({ ...emptyClient(), numarContract: n });
     setAnexe([emptyAnexa()]);
@@ -356,7 +441,12 @@ function App() {
       const { parsed, missing } = await extractFromDocx(file);
       // Banca o derivăm din IBAN (parser-ul nu mai întoarce banca).
       const bancaFromIban = parsed.iban ? bankFromIban(parsed.iban) : "";
-      setClientData((prev) => ({ ...emptyClient(), ...prev, ...parsed, banca: bancaFromIban }));
+      setClientData((prev) => ({
+        ...emptyClient(),
+        ...prev,
+        ...parsed,
+        banca: bancaFromIban,
+      }));
       setAnexe([emptyAnexa()]);
       setCurrentContractId(null);
       setStep("client");
@@ -376,20 +466,26 @@ function App() {
         await alert(
           "Import .docx OK. Câmpuri NEdetectate (completează manual): " +
             missing.join(", "),
-          { variant: "warning" }
+          { variant: "warning" },
         );
       } else {
-        await alert("Import .docx OK. Verifică datele în formular înainte de salvare.", { variant: "success" });
+        await alert(
+          "Import .docx OK. Verifică datele în formular înainte de salvare.",
+          { variant: "success" },
+        );
       }
     } catch (err) {
       console.error(err);
-      await alert("Eroare la citirea .docx: " + err.message, { variant: "danger" });
+      await alert("Eroare la citirea .docx: " + err.message, {
+        variant: "danger",
+      });
     }
     e.target.value = "";
   };
 
   const handleShowBlankTemplate = () => {
-    if (!blankData) setBlankData({ client: emptyClient(), anexe: [emptyAnexa()] });
+    if (!blankData)
+      setBlankData({ client: emptyClient(), anexe: [emptyAnexa()] });
     setBlankPreview(true);
     setPrintSelection("all");
     setShowPreview(true);
@@ -399,7 +495,7 @@ function App() {
     const clauze = blankData?.client?.clauzeCustom || {};
     const associate = await confirm(
       "Asociezi acest model cu un client anume? Anulează = salvează ca „Model generic” (fără client).",
-      { confirmLabel: "Asociez cu client", cancelLabel: "Model generic" }
+      { confirmLabel: "Asociez cu client", cancelLabel: "Model generic" },
     );
 
     let cui = "";
@@ -407,18 +503,25 @@ function App() {
 
     if (associate) {
       const history = listClientHistory();
-      const options = history.map((c) => `${c.numeBeneficiar} — ${c.cui}`).join("\n");
+      const options = history
+        .map((c) => `${c.numeBeneficiar} — ${c.cui}`)
+        .join("\n");
       const input = await prompt(
         `Introdu CUI sau alege din istoric:\n\n${options || "(istoric gol)"}`,
-        { defaultValue: "", placeholder: "CUI" }
+        { defaultValue: "", placeholder: "CUI" },
       );
       if (!input) return;
       const raw = input.replace(/^RO/i, "").trim();
-      const client = history.find((c) => (c.cui || "").replace(/^RO/i, "").trim() === raw);
+      const client = history.find(
+        (c) => (c.cui || "").replace(/^RO/i, "").trim() === raw,
+      );
       cui = client?.cui || (raw ? `RO${raw}` : "");
       numeBeneficiar = client?.numeBeneficiar || "";
       if (!numeBeneficiar) {
-        const ok = await confirm(`CUI ${raw} nu apare în istoric. Salvez modelul oricum (fără denumire beneficiar)?`, { confirmLabel: "Salvează" });
+        const ok = await confirm(
+          `CUI ${raw} nu apare în istoric. Salvez modelul oricum (fără denumire beneficiar)?`,
+          { confirmLabel: "Salvează" },
+        );
         if (!ok) return;
       }
     }
@@ -433,9 +536,14 @@ function App() {
       defaultBudget,
     });
     if (res.duplicate) {
-      await alert("Există deja un model identic salvat — nu îl resalvez.", { variant: "warning" });
+      await alert("Există deja un model identic salvat — nu îl resalvez.", {
+        variant: "warning",
+      });
     } else {
-      await alert(`Model salvat${numeBeneficiar && numeBeneficiar !== "Model generic" ? ` pentru ${numeBeneficiar}` : " (generic)"}. Îl găsești în Bibliotecă → Modele.`, { variant: "success" });
+      await alert(
+        `Model salvat${numeBeneficiar && numeBeneficiar !== "Model generic" ? ` pentru ${numeBeneficiar}` : " (generic)"}. Îl găsești în Bibliotecă → Modele.`,
+        { variant: "success" },
+      );
     }
   };
 
@@ -487,7 +595,10 @@ function App() {
 
   const autoFetchAnaf = async (manual = false) => {
     if (!clientData.cui || !validateCUI(clientData.cui)) {
-      if (manual === true) await alert("CUI lipsă sau invalid. Introdu un CUI corect.", { variant: "warning" });
+      if (manual === true)
+        await alert("CUI lipsă sau invalid. Introdu un CUI corect.", {
+          variant: "warning",
+        });
       return;
     }
     // ANAF are doar firme (CUI 2-10 cifre); pentru CNP (persoană fizică) se sare peste.
@@ -500,10 +611,14 @@ function App() {
         setAnafSyncAt(new Date());
       } catch (e) {
         console.warn("ANAF:", e.message);
-        if (manual === true) await alert("ANAF: " + (e?.message || e), { variant: "danger" });
+        if (manual === true)
+          await alert("ANAF: " + (e?.message || e), { variant: "danger" });
       }
     } else if (manual === true) {
-      await alert("CUI-ul pare a fi CNP (persoană fizică). ANAF nu are date pentru persoane fizice.", { variant: "warning" });
+      await alert(
+        "CUI-ul pare a fi CNP (persoană fizică). ANAF nu are date pentru persoane fizice.",
+        { variant: "warning" },
+      );
     }
     try {
       const modele = await getModeleByCui(clientData.cui);
@@ -511,16 +626,22 @@ function App() {
         const m = modele[0];
         const ok = await confirm(
           `Există ${modele.length} model${modele.length > 1 ? "e" : ""} salvat pentru acest client (ultimul: ${m.updatedAt?.slice(0, 10) || "—"}). Pornești de la el (clauze + valori implicite)?`,
-          { confirmLabel: "Folosește modelul" }
+          { confirmLabel: "Folosește modelul" },
         );
         if (ok) {
-          setClientData((prev) => ({ ...prev, clauzeCustom: m.clauzeCustom || {} }));
+          setClientData((prev) => ({
+            ...prev,
+            clauzeCustom: m.clauzeCustom || {},
+          }));
           setAnexe((prev) => {
             const next = [...prev];
             if (next[0]) {
               next[0] = {
                 eventData: { ...next[0].eventData, ...(m.defaultEvent || {}) },
-                budgetData: { ...next[0].budgetData, ...(m.defaultBudget || {}) },
+                budgetData: {
+                  ...next[0].budgetData,
+                  ...(m.defaultBudget || {}),
+                },
               };
             }
             return next;
@@ -539,7 +660,8 @@ function App() {
 
   const generateContractPdfBlob = async () => {
     const source = document.querySelector(".preview-container");
-    if (!source) throw new Error("Previzualizarea contractului nu este disponibilă.");
+    if (!source)
+      throw new Error("Previzualizarea contractului nu este disponibilă.");
     const [{ default: html2canvas }, jsPDFmod] = await Promise.all([
       import("html2canvas"),
       import("jspdf"),
@@ -548,24 +670,34 @@ function App() {
     const pages = Array.from(source.querySelectorAll(".document-page"));
     if (pages.length === 0) throw new Error("Nu există pagini de exportat.");
 
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pdf = new jsPDF({
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+    });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
 
-    const LOGO_W = 42, LOGO_H = 42, LOGO_X = 20, LOGO_Y = 8;
-    const FOOTER_W = 180, FOOTER_H = 20, FOOTER_X = 15;
+    const LOGO_W = 42,
+      LOGO_H = 42,
+      LOGO_X = 20,
+      LOGO_Y = 8;
+    const FOOTER_W = 180,
+      FOOTER_H = 20,
+      FOOTER_X = 15;
     const FOOTER_Y = pageH - FOOTER_H - 2;
     const CONTENT_TOP = LOGO_Y + LOGO_H + 4;
     const CONTENT_BOTTOM = FOOTER_Y - 2;
     const CONTENT_H = CONTENT_BOTTOM - CONTENT_TOP;
 
-    const loadImg = (src) => new Promise((res) => {
-      const im = new Image();
-      im.crossOrigin = "anonymous";
-      im.onload = () => res(im);
-      im.onerror = () => res(null);
-      im.src = src;
-    });
+    const loadImg = (src) =>
+      new Promise((res) => {
+        const im = new Image();
+        im.crossOrigin = "anonymous";
+        im.onload = () => res(im);
+        im.onerror = () => res(null);
+        im.src = src;
+      });
     const toDataURL = (im, type) => {
       if (!im) return null;
       const c = document.createElement("canvas");
@@ -574,27 +706,50 @@ function App() {
       c.getContext("2d").drawImage(im, 0, 0);
       return c.toDataURL(type);
     };
-    const [logoImg, footerImg] = await Promise.all([loadImg("/LOGO1.png"), loadImg("/subsol3.jfif")]);
+    const [logoImg, footerImg] = await Promise.all([
+      loadImg("/LOGO1.png"),
+      loadImg("/subsol3.jfif"),
+    ]);
     const logoData = toDataURL(logoImg, "image/png");
     const footerData = toDataURL(footerImg, "image/jpeg");
 
     const stamp = () => {
-      if (logoData) pdf.addImage(logoData, "PNG", LOGO_X, LOGO_Y, LOGO_W, LOGO_H);
-      if (footerData) pdf.addImage(footerData, "JPEG", FOOTER_X, FOOTER_Y, FOOTER_W, FOOTER_H);
+      if (logoData)
+        pdf.addImage(logoData, "PNG", LOGO_X, LOGO_Y, LOGO_W, LOGO_H);
+      if (footerData)
+        pdf.addImage(
+          footerData,
+          "JPEG",
+          FOOTER_X,
+          FOOTER_Y,
+          FOOTER_W,
+          FOOTER_H,
+        );
     };
 
     let firstPdfPage = true;
 
     for (let i = 0; i < pages.length; i++) {
-      const stripElems = pages[i].querySelectorAll(".print-header, .print-footer");
+      const stripElems = pages[i].querySelectorAll(
+        ".print-header, .print-footer",
+      );
       const oldDisplay = [];
-      stripElems.forEach((el) => { oldDisplay.push(el.style.display); el.style.display = "none"; });
+      stripElems.forEach((el) => {
+        oldDisplay.push(el.style.display);
+        el.style.display = "none";
+      });
 
       let canvas;
       try {
-        canvas = await html2canvas(pages[i], { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+        canvas = await html2canvas(pages[i], {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+        });
       } finally {
-        stripElems.forEach((el, j) => { el.style.display = oldDisplay[j]; });
+        stripElems.forEach((el, j) => {
+          el.style.display = oldDisplay[j];
+        });
       }
 
       const mmPerPx = pageW / canvas.width;
@@ -604,7 +759,16 @@ function App() {
       if (canvasHeightMm <= CONTENT_H + 0.5) {
         if (!firstPdfPage) pdf.addPage();
         stamp();
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, CONTENT_TOP, pageW, canvasHeightMm, undefined, "FAST");
+        pdf.addImage(
+          canvas.toDataURL("image/jpeg", 0.92),
+          "JPEG",
+          0,
+          CONTENT_TOP,
+          pageW,
+          canvasHeightMm,
+          undefined,
+          "FAST",
+        );
         firstPdfPage = false;
       } else {
         let yOffset = 0;
@@ -616,13 +780,32 @@ function App() {
           const ctx = sliceCanvas.getContext("2d");
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-          ctx.drawImage(canvas, 0, yOffset, canvas.width, thisSlicePx, 0, 0, canvas.width, thisSlicePx);
+          ctx.drawImage(
+            canvas,
+            0,
+            yOffset,
+            canvas.width,
+            thisSlicePx,
+            0,
+            0,
+            canvas.width,
+            thisSlicePx,
+          );
           const sliceDataURL = sliceCanvas.toDataURL("image/jpeg", 0.92);
           const sliceHeightMm = thisSlicePx * mmPerPx;
 
           if (!firstPdfPage) pdf.addPage();
           stamp();
-          pdf.addImage(sliceDataURL, "JPEG", 0, CONTENT_TOP, pageW, sliceHeightMm, undefined, "FAST");
+          pdf.addImage(
+            sliceDataURL,
+            "JPEG",
+            0,
+            CONTENT_TOP,
+            pageW,
+            sliceHeightMm,
+            undefined,
+            "FAST",
+          );
 
           yOffset += thisSlicePx;
           firstPdfPage = false;
@@ -639,11 +822,17 @@ function App() {
     const subject = `Contract nr. ${clientData.numarContract || ""} - ALUMA S.R.L.`;
     const body = `Bună ziua,\n\nVă transmitem contractul nr. ${clientData.numarContract || ""}${clientData.dataContract ? ` din ${clientData.dataContract}` : ""} împreună cu anexele aferente.\n\nVă mulțumim.\n\nCu stimă,\nALUMA S.R.L.`;
     const to = clientData.email || "";
-    const sanitize = (s) => (s || "").toString().replace(/[\\/:*?"<>|]/g, "").trim();
+    const sanitize = (s) =>
+      (s || "")
+        .toString()
+        .replace(/[\\/:*?"<>|]/g, "")
+        .trim();
     const ben = sanitize(clientData.numeBeneficiar);
     const nrC = sanitize(clientData.numarContract) || "fara-nr";
     const dataC = sanitize(clientData.dataContract);
-    const fileName = [ben, `Contract nr ${nrC} + anexe`, dataC].filter(Boolean).join(" - ") + ".pdf";
+    const fileName =
+      [ben, `Contract nr ${nrC} + anexe`, dataC].filter(Boolean).join(" - ") +
+      ".pdf";
 
     let blob;
     setPdfBusy(true);
@@ -651,7 +840,9 @@ function App() {
       blob = await generateContractPdfBlob();
     } catch (e) {
       setPdfBusy(false);
-      await alert("Nu am putut genera PDF-ul: " + (e?.message || e), { variant: "danger" });
+      await alert("Nu am putut genera PDF-ul: " + (e?.message || e), {
+        variant: "danger",
+      });
       return;
     }
     setPdfBusy(false);
@@ -659,7 +850,11 @@ function App() {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const file = new File([blob], fileName, { type: "application/pdf" });
 
-    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (
+      isMobile &&
+      navigator.canShare &&
+      navigator.canShare({ files: [file] })
+    ) {
       try {
         await navigator.share({ files: [file], title: subject, text: body });
         return;
@@ -679,7 +874,10 @@ function App() {
     const url = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = url;
     setTimeout(() => {
-      alert(`PDF-ul "${fileName}" a fost descărcat. Atașează-l (drag & drop) în clientul de email care s-a deschis.`, { title: "Email pregătit", variant: "success" });
+      alert(
+        `PDF-ul "${fileName}" a fost descărcat. Atașează-l (drag & drop) în clientul de email care s-a deschis.`,
+        { title: "Email pregătit", variant: "success" },
+      );
     }, 300);
   };
 
@@ -692,9 +890,12 @@ function App() {
       const absolutize = (root) => {
         root.querySelectorAll("img").forEach((img) => {
           try {
-            const abs = new URL(img.getAttribute("src"), window.location.href).href;
+            const abs = new URL(img.getAttribute("src"), window.location.href)
+              .href;
             img.setAttribute("src", abs);
-          } catch { /* keep */ }
+          } catch {
+            /* keep */
+          }
         });
       };
 
@@ -722,12 +923,14 @@ function App() {
       // mm -> px @ 96 DPI (html-to-docx folosește atribute width/height în px)
       const mmToPx = (mm) => Math.round(mm * 3.7795);
       if (headerImg) {
-        const abs = new URL(headerImg.getAttribute("src"), window.location.href).href;
+        const abs = new URL(headerImg.getAttribute("src"), window.location.href)
+          .href;
         const data = await toDataUrl(abs);
         headerHTML = `<p style="margin:0"><img src="${data}" width="${mmToPx(60)}" height="${mmToPx(30)}" /></p>`;
       }
       if (footerImg) {
-        const abs = new URL(footerImg.getAttribute("src"), window.location.href).href;
+        const abs = new URL(footerImg.getAttribute("src"), window.location.href)
+          .href;
         const data = await toDataUrl(abs);
         footerHTML = `<p style="margin:0;text-align:center"><img src="${data}" width="${mmToPx(180)}" height="${mmToPx(18)}" /></p>`;
       }
@@ -736,7 +939,9 @@ function App() {
       const bodyParts = [];
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i].cloneNode(true);
-        page.querySelectorAll(".no-print, .page-marks").forEach((n) => n.remove());
+        page
+          .querySelectorAll(".no-print, .page-marks")
+          .forEach((n) => n.remove());
         absolutize(page);
 
         // Semnătura imagine: dataURL + dimensiuni atribute HTML
@@ -746,7 +951,9 @@ function App() {
             sign.setAttribute("src", data);
             sign.setAttribute("width", String(mmToPx(50)));
             sign.setAttribute("height", String(mmToPx(20)));
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         }
 
         // Flex -> table pentru .doc-signatures (Word nu înțelege flex)
@@ -758,7 +965,10 @@ function App() {
             const tr = document.createElement("tr");
             boxes.forEach((b) => {
               const td = document.createElement("td");
-              td.setAttribute("style", "width:50%;vertical-align:top;border:none;padding:0 6pt");
+              td.setAttribute(
+                "style",
+                "width:50%;vertical-align:top;border:none;padding:0 6pt",
+              );
               td.innerHTML = b.innerHTML;
               tr.appendChild(td);
             });
@@ -799,35 +1009,57 @@ function App() {
           const { Buffer } = await import("buffer");
           window.Buffer = Buffer;
         }
-        const scriptUrl = (await import("@turbodocx/html-to-docx/dist/html-to-docx.browser.js?url")).default;
+        const scriptUrl = (
+          await import("@turbodocx/html-to-docx/dist/html-to-docx.browser.js?url")
+        ).default;
         await new Promise((resolve, reject) => {
           const s = document.createElement("script");
           s.src = scriptUrl;
           s.onload = resolve;
-          s.onerror = () => reject(new Error("Nu s-a putut încărca html-to-docx browser bundle"));
+          s.onerror = () =>
+            reject(
+              new Error("Nu s-a putut încărca html-to-docx browser bundle"),
+            );
           document.head.appendChild(s);
         });
       }
       const htmlToDocx = window.HTMLToDOCX;
-      if (typeof htmlToDocx !== "function") throw new Error("HTMLToDOCX indisponibil");
+      if (typeof htmlToDocx !== "function")
+        throw new Error("HTMLToDOCX indisponibil");
 
-      const blob = await htmlToDocx(html, headerHTML || null, {
-        orientation: "portrait",
-        pageSize: { width: 11906, height: 16838 }, // A4 in twips
-        margins: { top: 850, right: 567, bottom: 1020, left: 1134 }, // 15/10/18/20 mm
-        font: "Times New Roman",
-        fontSize: 24, // 12pt
-        table: { row: { cantSplit: true } },
-        header: !!headerHTML,
-        footer: !!footerHTML,
-        pageNumber: true,
-      }, footerHTML || null);
+      const blob = await htmlToDocx(
+        html,
+        headerHTML || null,
+        {
+          orientation: "portrait",
+          pageSize: { width: 11906, height: 16838 }, // A4 in twips
+          margins: { top: 850, right: 567, bottom: 1020, left: 1134 }, // 15/10/18/20 mm
+          font: "Times New Roman",
+          fontSize: 24, // 12pt
+          table: { row: { cantSplit: true } },
+          header: !!headerHTML,
+          footer: !!footerHTML,
+          pageNumber: true,
+        },
+        footerHTML || null,
+      );
 
-      const finalBlob = blob instanceof Blob
-        ? blob
-        : new Blob([blob.buffer ? blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength) : blob], {
-            type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          });
+      const finalBlob =
+        blob instanceof Blob
+          ? blob
+          : new Blob(
+              [
+                blob.buffer
+                  ? blob.buffer.slice(
+                      blob.byteOffset,
+                      blob.byteOffset + blob.byteLength,
+                    )
+                  : blob,
+              ],
+              {
+                type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              },
+            );
       const url = URL.createObjectURL(finalBlob);
       const a = document.createElement("a");
       a.href = url;
@@ -836,20 +1068,24 @@ function App() {
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error("Export Word:", e);
-      await alert("Eroare la exportul Word: " + (e?.message || e), { variant: "danger" });
+      await alert("Eroare la exportul Word: " + (e?.message || e), {
+        variant: "danger",
+      });
     }
   };
 
   const updateAnexa = (idx, section, field, value) => {
     setAnexe((prev) =>
       prev.map((a, i) =>
-        i === idx ? { ...a, [section]: { ...a[section], [field]: value } } : a
-      )
+        i === idx ? { ...a, [section]: { ...a[section], [field]: value } } : a,
+      ),
     );
   };
   const addAnexa = () => {
     if (clientData.tipContract === "unic" && anexe.length >= 1) {
-      alert("Contractul „Eveniment unic” permite o singură anexă. Schimbă tipul în „Cadru” pentru anexe multiple.");
+      alert(
+        "Contractul „Eveniment unic” permite o singură anexă. Schimbă tipul în „Cadru” pentru anexe multiple.",
+      );
       return;
     }
     setAnexe((prev) => [...prev, emptyAnexa()]);
@@ -857,12 +1093,17 @@ function App() {
   };
   const duplicateAnexa = (idx) => {
     if (clientData.tipContract === "unic" && anexe.length >= 1) {
-      alert("Contractul „Eveniment unic” permite o singură anexă. Schimbă tipul în „Cadru” pentru anexe multiple.");
+      alert(
+        "Contractul „Eveniment unic” permite o singură anexă. Schimbă tipul în „Cadru” pentru anexe multiple.",
+      );
       return;
     }
     setAnexe((prev) => [
       ...prev,
-      { eventData: { ...prev[idx].eventData }, budgetData: { ...prev[idx].budgetData } },
+      {
+        eventData: { ...prev[idx].eventData },
+        budgetData: { ...prev[idx].budgetData },
+      },
     ]);
     setStep(`anexa-${anexe.length}`);
   };
@@ -871,7 +1112,13 @@ function App() {
     setStep("client");
   };
   const resetAll = async () => {
-    if (!(await confirm("Ștergi toate datele?", { variant: "danger", confirmLabel: "Șterge" }))) return;
+    if (
+      !(await confirm("Ștergi toate datele?", {
+        variant: "danger",
+        confirmLabel: "Șterge",
+      }))
+    )
+      return;
     setClientData(emptyClient());
     setAnexe([emptyAnexa()]);
     setStep("client");
@@ -882,25 +1129,40 @@ function App() {
     const errs = [];
     if (!clientData.numeBeneficiar) errs.push("Nume Beneficiar lipsă.");
     if (!clientData.reprezentant) errs.push("Reprezentant Legal lipsă.");
-    if (!isValidDmy(clientData.dataContract)) errs.push("Data contractului trebuie zz-ll-aaaa.");
+    if (!isValidDmy(clientData.dataContract))
+      errs.push("Data contractului trebuie zz-ll-aaaa.");
     if (clientData.tipContract === "cadru") {
-      if (!isValidDmy(clientData.dataExpirare)) errs.push("Contract cadru: data de expirare este obligatorie (zz-ll-aaaa).");
-      else if (clientData.dataExpirare && clientData.dataContract && parseDmy(clientData.dataExpirare) <= parseDmy(clientData.dataContract)) {
-        errs.push("Data expirării trebuie să fie ulterioară datei contractului.");
+      if (!isValidDmy(clientData.dataExpirare))
+        errs.push(
+          "Contract cadru: data de expirare este obligatorie (zz-ll-aaaa).",
+        );
+      else if (
+        clientData.dataExpirare &&
+        clientData.dataContract &&
+        parseDmy(clientData.dataExpirare) <= parseDmy(clientData.dataContract)
+      ) {
+        errs.push(
+          "Data expirării trebuie să fie ulterioară datei contractului.",
+        );
       }
     }
     if (clientData.tipContract === "unic" && anexe.length > 1) {
       errs.push("Contract „Eveniment unic”: este permisă o singură anexă.");
     }
-    if (clientData.cui && !validateCUI(clientData.cui)) errs.push("CUI/CNP are format invalid.");
-    if (clientData.iban && !validateIBAN(clientData.iban)) errs.push("IBAN are format invalid.");
+    if (clientData.cui && !validateCUI(clientData.cui))
+      errs.push("CUI/CNP are format invalid.");
+    if (clientData.iban && !validateIBAN(clientData.iban))
+      errs.push("IBAN are format invalid.");
     anexe.forEach((a, i) => {
       const n = i + 1;
       if (!a.eventData.scop) errs.push(`Anexa ${n}: scop lipsă.`);
-      if (!isValidDmy(a.eventData.dataEveniment)) errs.push(`Anexa ${n}: data evenimentului trebuie zz-ll-aaaa.`);
+      if (!isValidDmy(a.eventData.dataEveniment))
+        errs.push(`Anexa ${n}: data evenimentului trebuie zz-ll-aaaa.`);
       if (!a.eventData.locatie) errs.push(`Anexa ${n}: locație lipsă.`);
-      if (!a.eventData.zilePredare) errs.push(`Anexa ${n}: zile predare lipsă.`);
-      if (!a.budgetData.valoareServicii) errs.push(`Anexa ${n}: valoare servicii lipsă.`);
+      if (!a.eventData.zilePredare)
+        errs.push(`Anexa ${n}: zile predare lipsă.`);
+      if (!a.budgetData.valoareServicii)
+        errs.push(`Anexa ${n}: valoare servicii lipsă.`);
     });
     return errs;
   };
@@ -908,7 +1170,8 @@ function App() {
   const salveazaContract = async ({ silent = false } = {}) => {
     const nr = (clientData.numarContract || "").trim();
     if (!nr) {
-      const msg = "Contractul nu are număr. Generează un număr înainte de salvare.";
+      const msg =
+        "Contractul nu are număr. Generează un număr înainte de salvare.";
       if (silent) throw new Error(msg);
       await alert(msg, { variant: "warning" });
       return;
@@ -916,11 +1179,13 @@ function App() {
     try {
       const keepIds = new Set(anexe.map((_, i) => `${nr}_A${i + 1}`));
       for (const col of ["evenimente", "incasari"]) {
-        const snap = await getDocs(query(collection(db, col), where("numarContract", "==", nr)));
+        const snap = await getDocs(
+          query(collection(db, col), where("numarContract", "==", nr)),
+        );
         await Promise.all(
           snap.docs
             .filter((d) => !keepIds.has(d.id))
-            .map((d) => deleteDoc(doc(db, col, d.id)))
+            .map((d) => deleteDoc(doc(db, col, d.id))),
         );
       }
 
@@ -937,14 +1202,18 @@ function App() {
           updatedAt: serverTimestamp(),
         });
 
-        await setDoc(doc(db, "incasari", anexaId), {
-          ...a.budgetData,
-          total,
-          numarContract: nr,
-          cuiBeneficiar: clientData.cui,
-          anexaIndex: i + 1,
-          updatedAt: serverTimestamp(),
-        }, { merge: true });
+        await setDoc(
+          doc(db, "incasari", anexaId),
+          {
+            ...a.budgetData,
+            total,
+            numarContract: nr,
+            cuiBeneficiar: clientData.cui,
+            anexaIndex: i + 1,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
       }
 
       // Dual-write — schema nouă (contracte/{nr} + anexe + beneficiari/{cui}).
@@ -956,11 +1225,16 @@ function App() {
         console.warn("Dual-write V2 a eșuat (schema veche e ok):", e);
       }
 
-      if (!silent) await alert("Datele au fost salvate cu succes în Firestore.", { variant: "success" });
+      if (!silent)
+        await alert("Datele au fost salvate cu succes în Firestore.", {
+          variant: "success",
+        });
     } catch (e) {
       console.error("Firestore:", e);
       if (silent) throw e;
-      await alert("Eroare la salvarea în Firestore: " + e.message, { variant: "danger" });
+      await alert("Eroare la salvarea în Firestore: " + e.message, {
+        variant: "danger",
+      });
     }
   };
 
@@ -1011,10 +1285,16 @@ function App() {
   /* ---------- Derived ---------- */
   const totalGeneral = useMemo(
     () => anexe.reduce((s, a) => s + sumBudget(a.budgetData), 0),
-    [anexe]
+    [anexe],
   );
   const totalsByLine = useMemo(() => {
-    const t = { valoareServicii: 0, transport: 0, diurna: 0, cazare: 0, alteCheltuieli: 0 };
+    const t = {
+      valoareServicii: 0,
+      transport: 0,
+      diurna: 0,
+      cazare: 0,
+      alteCheltuieli: 0,
+    };
     anexe.forEach((a) => {
       Object.keys(t).forEach((k) => (t[k] += Number(a.budgetData[k]) || 0));
     });
@@ -1023,11 +1303,26 @@ function App() {
 
   const checklist = useMemo(() => {
     const items = [];
-    items.push({ ok: !!clientData.numeBeneficiar, text: "Denumire beneficiar completată" });
-    items.push({ ok: !!clientData.reprezentant, text: "Reprezentant legal completat" });
-    items.push({ ok: !!clientData.cui && validateCUI(clientData.cui), text: "CUI / CNP cu format corect" });
-    items.push({ ok: !!clientData.iban && validateIBAN(clientData.iban), text: "IBAN cu format corect" });
-    items.push({ ok: isValidDmy(clientData.dataContract), text: "Data contract validă" });
+    items.push({
+      ok: !!clientData.numeBeneficiar,
+      text: "Denumire beneficiar completată",
+    });
+    items.push({
+      ok: !!clientData.reprezentant,
+      text: "Reprezentant legal completat",
+    });
+    items.push({
+      ok: !!clientData.cui && validateCUI(clientData.cui),
+      text: "CUI / CNP cu format corect",
+    });
+    items.push({
+      ok: !!clientData.iban && validateIBAN(clientData.iban),
+      text: "IBAN cu format corect",
+    });
+    items.push({
+      ok: isValidDmy(clientData.dataContract),
+      text: "Data contract validă",
+    });
     anexe.forEach((a, i) => {
       const ok =
         !!a.eventData.scop &&
@@ -1045,11 +1340,18 @@ function App() {
      PREVIEW MODE
      ==================================================================== */
   if (showPreview) {
-    const previewClient = blankPreview ? (blankData?.client || emptyClient()) : clientData;
-    const previewAnexe = blankPreview ? (blankData?.anexe || [emptyAnexa()]) : anexe;
+    const previewClient = blankPreview
+      ? blankData?.client || emptyClient()
+      : clientData;
+    const previewAnexe = blankPreview
+      ? blankData?.anexe || [emptyAnexa()]
+      : anexe;
     const setPreviewClauze = (cc) => {
       if (blankPreview) {
-        setBlankData((prev) => ({ ...prev, client: { ...prev.client, clauzeCustom: cc } }));
+        setBlankData((prev) => ({
+          ...prev,
+          client: { ...prev.client, clauzeCustom: cc },
+        }));
       } else {
         setClientData((p) => ({ ...p, clauzeCustom: cc }));
         scheduleAutoSave();
@@ -1058,7 +1360,10 @@ function App() {
     const setPreviewData = (iso) => {
       const v = normalizeDate(iso);
       if (blankPreview) {
-        setBlankData((prev) => ({ ...prev, client: { ...prev.client, dataContract: v } }));
+        setBlankData((prev) => ({
+          ...prev,
+          client: { ...prev.client, dataContract: v },
+        }));
       } else {
         setClientData((p) => ({ ...p, dataContract: v }));
         scheduleAutoSave();
@@ -1067,16 +1372,23 @@ function App() {
     const setPreviewAnexaData = (idx, iso) => {
       const v = normalizeDate(iso);
       const apply = (an, i) =>
-        i === idx ? { ...an, eventData: { ...an.eventData, dataEmitere: v } } : an;
+        i === idx
+          ? { ...an, eventData: { ...an.eventData, dataEmitere: v } }
+          : an;
       if (blankPreview) {
-        setBlankData((prev) => ({ ...prev, anexe: (prev.anexe || []).map(apply) }));
+        setBlankData((prev) => ({
+          ...prev,
+          anexe: (prev.anexe || []).map(apply),
+        }));
       } else {
         setAnexe((prev) => prev.map(apply));
         scheduleAutoSave();
       }
     };
-    const showContract = printSelection === "all" || printSelection === "contract";
-    const sanitizeFilename = (s) => (s || "").replace(/[\\/:*?"<>|]/g, "").trim();
+    const showContract =
+      printSelection === "all" || printSelection === "contract";
+    const sanitizeFilename = (s) =>
+      (s || "").replace(/[\\/:*?"<>|]/g, "").trim();
     const buildPdfTitle = () => {
       const ben = sanitizeFilename(previewClient.numeBeneficiar);
       const nrC = sanitizeFilename(previewClient.numarContract) || "fara-nr";
@@ -1089,7 +1401,11 @@ function App() {
         core = `Contract nr ${nrC}`;
       } else {
         const a = previewAnexe[printSelection];
-        const nrA = anexaNr(previewClient.anexaStart, a?.eventData?.numarAnexa, printSelection);
+        const nrA = anexaNr(
+          previewClient.anexaStart,
+          a?.eventData?.numarAnexa,
+          printSelection,
+        );
         core = `Anexa nr ${nrA} la contract nr ${nrC}`;
         dataPart = sanitizeFilename(a?.eventData?.dataEmitere) || dataC;
       }
@@ -1116,16 +1432,44 @@ function App() {
     return (
       <div className="preview-container">
         <div className="no-print print-controls">
-          <button className="back-btn" onClick={async () => { await flushAutoSave(); setShowPreview(false); setBlankPreview(false); }}>
+          <button
+            className="back-btn"
+            onClick={async () => {
+              await flushAutoSave();
+              setShowPreview(false);
+              setBlankPreview(false);
+            }}
+          >
             ← Înapoi la editare
           </button>
           {!blankPreview && isDirty && (
-            <span title="Modificări nesalvate — se salvează automat" style={{ alignSelf: "center", padding: "4px 10px", background: "#FEF3C7", color: "#92400E", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
+            <span
+              title="Modificări nesalvate — se salvează automat"
+              style={{
+                alignSelf: "center",
+                padding: "4px 10px",
+                background: "#FEF3C7",
+                color: "#92400E",
+                borderRadius: 4,
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
               · nesalvat
             </span>
           )}
           {blankPreview && (
-            <span style={{ alignSelf: "center", padding: "4px 10px", background: "#FEF3C7", color: "#92400E", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
+            <span
+              style={{
+                alignSelf: "center",
+                padding: "4px 10px",
+                background: "#FEF3C7",
+                color: "#92400E",
+                borderRadius: 4,
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
               MODEL BLANK · pentru pre-acord client
             </span>
           )}
@@ -1133,17 +1477,27 @@ function App() {
             value={printSelection}
             onChange={(e) => {
               const v = e.target.value;
-              setPrintSelection(v === "all" || v === "contract" ? v : Number(v));
+              setPrintSelection(
+                v === "all" || v === "contract" ? v : Number(v),
+              );
             }}
           >
             <option value="all">Contract + toate anexele</option>
             <option value="contract">Doar contract</option>
             {previewAnexe.map((_, i) => (
-              <option key={i} value={i}>Doar Anexa nr. {i + 1}</option>
+              <option key={i} value={i}>
+                Doar Anexa nr. {i + 1}
+              </option>
             ))}
           </select>
           {!blankPreview && printSelection === "all" && anexe.length > 1 && (
-            <span style={{ alignSelf: "center", fontFamily: "Instrument Serif, serif", fontSize: 18 }}>
+            <span
+              style={{
+                alignSelf: "center",
+                fontFamily: "Instrument Serif, serif",
+                fontSize: 18,
+              }}
+            >
               Total general: {fmt(totalGeneral)} LEI
             </span>
           )}
@@ -1151,30 +1505,45 @@ function App() {
             <button className="back-btn" onClick={() => setEditMode((v) => !v)}>
               {editMode ? "Ieși din editare" : "Editare inline"}
             </button>
-            <button className="back-btn" onClick={exportDocx}>Export Word</button>
-            <button className="back-btn" onClick={handlePrint}>⬇ Descarcă PDF</button>
+            <button className="back-btn" onClick={exportDocx}>
+              Export Word
+            </button>
+            <button className="back-btn" onClick={handlePrint}>
+              ⬇ Descarcă PDF
+            </button>
             <button className="back-btn" onClick={sendEmail} disabled={pdfBusy}>
               {pdfBusy ? "Se generează…" : "Trimite email"}
             </button>
             {blankPreview && (
-              <button className="back-btn" onClick={handleSaveAsModel} title="Salvează acest model editat pentru un client">
+              <button
+                className="back-btn"
+                onClick={handleSaveAsModel}
+                title="Salvează acest model editat pentru un client"
+              >
                 <Icon name="save" /> Salvează ca model
               </button>
             )}
-            <button className="print-btn" onClick={handlePrint}>Printează / PDF</button>
+            <button className="print-btn" onClick={handlePrint}>
+              Printează / PDF
+            </button>
           </div>
         </div>
 
         <div className="no-print print-note">
-          <strong>Pentru PDF curat:</strong> în dialogul de print → „More settings" → debifează
-          <em> „Headers and footers"</em> și setează <em>Margins: None</em>. Destinație:
+          <strong>Pentru PDF curat:</strong> în dialogul de print → „More
+          settings" → debifează
+          <em> „Headers and footers"</em> și setează <em>Margins: None</em>.
+          Destinație:
           <em> Save as PDF</em>.
         </div>
 
         {showContract && (
           <Contract
             clientData={previewClient}
-            anyVideo={!!clientData.includeVideo || previewAnexe.some((a) => a?.eventData?.includeVideo)}
+            anyVideo={
+              !!clientData.includeVideo ||
+              previewAnexe.some((a) => a?.eventData?.includeVideo)
+            }
             editMode={editMode}
             onClauzeChange={setPreviewClauze}
             onDataChange={setPreviewData}
@@ -1183,12 +1552,23 @@ function App() {
         {visibleAnexe.map((a) => (
           <Anexa
             key={a.idx}
-            anexaNumber={anexaNr(previewClient.anexaStart, a.eventData.numarAnexa, a.idx)}
+            anexaNumber={anexaNr(
+              previewClient.anexaStart,
+              a.eventData.numarAnexa,
+              a.idx,
+            )}
             clientData={previewClient}
             eventData={{
               ...a.eventData,
-              dataPredare: calcDataPredare(a.eventData.dataEveniment, a.eventData.zilePredare),
-              termenIncasare: calcTermenIncasare(a.eventData.dataEveniment, a.eventData.zilePredare, a.eventData.zileIncasare),
+              dataPredare: calcDataPredare(
+                a.eventData.dataEveniment,
+                a.eventData.zilePredare,
+              ),
+              termenIncasare: calcTermenIncasare(
+                a.eventData.dataEveniment,
+                a.eventData.zilePredare,
+                a.eventData.zileIncasare,
+              ),
             }}
             budgetData={a.budgetData}
             calculeazaTotal={() => sumBudget(a.budgetData)}
@@ -1205,7 +1585,9 @@ function App() {
      EDIT MODE
      ==================================================================== */
   const anexaIdx =
-    typeof step === "string" && step.startsWith("anexa-") ? Number(step.split("-")[1]) : null;
+    typeof step === "string" && step.startsWith("anexa-")
+      ? Number(step.split("-")[1])
+      : null;
   const currentAnexa = anexaIdx !== null ? anexe[anexaIdx] : null;
 
   /* Reusable date field */
@@ -1216,7 +1598,15 @@ function App() {
     })();
     return (
       <div className="field">
-        <label>{label} <span className="hint" style={{ textTransform: "none", letterSpacing: 0 }}>(zz-ll-aaaa)</span></label>
+        <label>
+          {label}{" "}
+          <span
+            className="hint"
+            style={{ textTransform: "none", letterSpacing: 0 }}
+          >
+            (zz-ll-aaaa)
+          </span>
+        </label>
         <div className="date-with-cal">
           <input
             type="text"
@@ -1227,7 +1617,10 @@ function App() {
               const n = normalizeDate(e.target.value);
               if (n !== e.target.value) onChange({ target: { value: n } });
             }}
-            style={{ borderColor: value && !isValidDmy(value) ? "var(--danger)" : undefined }}
+            style={{
+              borderColor:
+                value && !isValidDmy(value) ? "var(--danger)" : undefined,
+            }}
           />
           <div style={{ position: "relative" }}>
             <button
@@ -1244,8 +1637,20 @@ function App() {
             <input
               type="date"
               value={isoVal}
-              onChange={(e) => onChange({ target: { value: normalizeDate(e.target.value) } })}
-              style={{ position: "absolute", left: 0, top: "100%", width: 0, height: 0, opacity: 0, border: 0, padding: 0, pointerEvents: "none" }}
+              onChange={(e) =>
+                onChange({ target: { value: normalizeDate(e.target.value) } })
+              }
+              style={{
+                position: "absolute",
+                left: 0,
+                top: "100%",
+                width: 0,
+                height: 0,
+                opacity: 0,
+                border: 0,
+                padding: 0,
+                pointerEvents: "none",
+              }}
             />
           </div>
         </div>
@@ -1257,32 +1662,60 @@ function App() {
   const isClient = step === "client";
   const isDashboard = step === "dashboard";
   const isRapoarte = step === "rapoarte";
-  const isSaved = step === "salvate" || step === "biblioteca-contracte" || step === "biblioteca-clienti" || step === "biblioteca-modele";
+  const isSaved =
+    step === "salvate" ||
+    step === "biblioteca-contracte" ||
+    step === "biblioteca-clienti" ||
+    step === "biblioteca-modele";
   const isHubFlux = step === "hub-flux";
   const isHubBiblioteca = step === "hub-biblioteca";
   const isHubSistem = step === "hub-sistem";
   const isCont = step === "cont";
   const isHub = isHubFlux || isHubBiblioteca || isHubSistem;
-  const bibliotecaTab = step === "biblioteca-clienti" ? "clienti" : step === "biblioteca-modele" ? "modele" : "contracte";
+  const bibliotecaTab =
+    step === "biblioteca-clienti"
+      ? "clienti"
+      : step === "biblioteca-modele"
+        ? "modele"
+        : "contracte";
 
   const refreshDrafturi = async () => {
-    try { setDrafturi(await listDrafturi()); } catch { setDrafturi([]); }
+    try {
+      setDrafturi(await listDrafturi());
+    } catch {
+      setDrafturi([]);
+    }
   };
 
   const handleOpenDraft = async (id) => {
     try {
       const rec = await getContract(id);
-      if (!rec) { await alert("Draft inexistent.", { variant: "warning" }); return; }
+      if (!rec) {
+        await alert("Draft inexistent.", { variant: "warning" });
+        return;
+      }
       setClientData({ ...emptyClient(), ...(rec.clientData || {}) });
-      setAnexe(Array.isArray(rec.anexe) && rec.anexe.length ? rec.anexe : [emptyAnexa()]);
+      setAnexe(
+        Array.isArray(rec.anexe) && rec.anexe.length
+          ? rec.anexe
+          : [emptyAnexa()],
+      );
       setCurrentContractId(rec.id);
       setStep("client");
     } catch (e) {
-      await alert("Eroare la deschidere draft: " + e.message, { variant: "danger" });
+      await alert("Eroare la deschidere draft: " + e.message, {
+        variant: "danger",
+      });
     }
   };
   const handleDeleteDraft = async (id) => {
-    if (!(await confirm("Ștergi acest draft definitiv?", { variant: "danger", confirmLabel: "Șterge" }))) return;
+    if (
+      !(await confirm("Ștergi acest draft definitiv?", {
+        variant: "danger",
+        confirmLabel: "Șterge",
+      }))
+    )
+      return;
     try {
       await deleteContract(id);
       if (currentContractId === id) setCurrentContractId(null);
@@ -1292,8 +1725,16 @@ function App() {
     }
   };
   const handleMarkTrimis = async () => {
-    if (!currentContractId) { await alert("Salvează contractul mai întâi.", { variant: "warning" }); return; }
-    if (!(await confirm("Marchezi contractul ca trimis? Va dispărea din lista de drafturi."))) return;
+    if (!currentContractId) {
+      await alert("Salvează contractul mai întâi.", { variant: "warning" });
+      return;
+    }
+    if (
+      !(await confirm(
+        "Marchezi contractul ca trimis? Va dispărea din lista de drafturi.",
+      ))
+    )
+      return;
     try {
       await markContractTrimis(currentContractId);
       await refreshDrafturi();
@@ -1320,7 +1761,12 @@ function App() {
           title="Mergi la Dashboard"
           style={{ cursor: "pointer" }}
         >
-          <img src="/LOGO1.png" alt="Ioana Apostol" className="brand-logo" draggable="false" />
+          <img
+            src="/LOGO1.png"
+            alt="Ioana Apostol"
+            className="brand-logo"
+            draggable="false"
+          />
           <div className="brand-name">Aluma</div>
           <div className="brand-sub">v{__APP_VERSION__}</div>
         </div>
@@ -1330,13 +1776,17 @@ function App() {
           className={`nav-item ${isDashboard ? "active" : ""}`}
           onClick={() => setStep("dashboard")}
         >
-          <span><Icon name="home" /> Dashboard</span>
+          <span>
+            <Icon name="home" /> Dashboard
+          </span>
         </button>
         <button
           className={`nav-item ${isRapoarte ? "active" : ""}`}
           onClick={() => setStep("rapoarte")}
         >
-          <span><Icon name="chart" /> Rapoarte</span>
+          <span>
+            <Icon name="chart" /> Rapoarte
+          </span>
         </button>
 
         <div
@@ -1344,17 +1794,23 @@ function App() {
           onClick={() => setStep("hub-flux")}
           role="button"
           tabIndex={0}
-        >Flux contract</div>
+        >
+          Flux contract
+        </div>
 
         <button
           className={`nav-item ${isClient || isAnnex ? "active" : ""}`}
           onClick={() => setStep("client")}
         >
-          <span><Icon name="folder" /> Editor contract</span>
+          <span>
+            <Icon name="folder" /> Editor contract
+          </span>
           {anexe.length > 0 && <span className="nav-meta">{anexe.length}</span>}
         </button>
         <button className="nav-item" onClick={handleNewContract}>
-          <span><Icon name="plus" /> Contract nou</span>
+          <span>
+            <Icon name="plus" /> Contract nou
+          </span>
         </button>
 
         <div
@@ -1362,24 +1818,32 @@ function App() {
           onClick={() => setStep("hub-biblioteca")}
           role="button"
           tabIndex={0}
-        >Bibliotecă</div>
+        >
+          Bibliotecă
+        </div>
         <button
           className={`nav-item ${step === "biblioteca-contracte" || step === "salvate" ? "active" : ""}`}
           onClick={() => setStep("biblioteca-contracte")}
         >
-          <span><Icon name="folder" /> Contracte</span>
+          <span>
+            <Icon name="folder" /> Contracte
+          </span>
         </button>
         <button
           className={`nav-item ${step === "biblioteca-clienti" ? "active" : ""}`}
           onClick={() => setStep("biblioteca-clienti")}
         >
-          <span><Icon name="users" /> Clienți</span>
+          <span>
+            <Icon name="users" /> Clienți
+          </span>
         </button>
         <button
           className={`nav-item ${step === "biblioteca-modele" ? "active" : ""}`}
           onClick={() => setStep("biblioteca-modele")}
         >
-          <span><Icon name="ruler" /> Modele</span>
+          <span>
+            <Icon name="ruler" /> Modele
+          </span>
         </button>
 
         <div
@@ -1387,30 +1851,68 @@ function App() {
           onClick={() => setStep("hub-sistem")}
           role="button"
           tabIndex={0}
-        >Sistem</div>
+        >
+          Sistem
+        </div>
         <button className="nav-item" onClick={onExport}>
-          <span><Icon name="download" /> Export JSON</span>
+          <span>
+            <Icon name="download" /> Export JSON
+          </span>
         </button>
         <button className="nav-item" onClick={() => fileRef.current?.click()}>
-          <span><Icon name="upload" /> Import JSON</span>
+          <span>
+            <Icon name="upload" /> Import JSON
+          </span>
         </button>
-        <input ref={fileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={onImport} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json"
+          style={{ display: "none" }}
+          onChange={onImport}
+        />
         <button className="nav-item" onClick={handleExportBackup}>
-          <span><Icon name="download" /> Backup DB</span>
+          <span>
+            <Icon name="download" /> Backup DB
+          </span>
         </button>
-        <button className="nav-item" onClick={() => backupFileRef.current?.click()}>
-          <span><Icon name="upload" /> Restaurează backup</span>
+        <button
+          className="nav-item"
+          onClick={() => backupFileRef.current?.click()}
+        >
+          <span>
+            <Icon name="upload" /> Restaurează backup
+          </span>
         </button>
-        <input ref={backupFileRef} type="file" accept="application/json" style={{ display: "none" }} onChange={handleImportBackup} />
-        <button className="nav-item" onClick={() => docFileRef.current?.click()}>
-          <span><Icon name="inbox-down" /> Import .docx / PDF</span>
+        <input
+          ref={backupFileRef}
+          type="file"
+          accept="application/json"
+          style={{ display: "none" }}
+          onChange={handleImportBackup}
+        />
+        <button
+          className="nav-item"
+          onClick={() => docFileRef.current?.click()}
+        >
+          <span>
+            <Icon name="inbox-down" /> Import .docx / PDF
+          </span>
         </button>
-        <input ref={docFileRef} type="file" accept=".docx,.pdf" style={{ display: "none" }} onChange={handleImportDocx} />
+        <input
+          ref={docFileRef}
+          type="file"
+          accept=".docx,.pdf"
+          style={{ display: "none" }}
+          onChange={handleImportDocx}
+        />
         <button
           className={`nav-item ${isCont ? "active" : ""}`}
           onClick={() => setStep("cont")}
         >
-          <span><Icon name="user" /> Contul meu</span>
+          <span>
+            <Icon name="user" /> Contul meu
+          </span>
         </button>
 
         <div className="sidebar-bottom">
@@ -1427,7 +1929,6 @@ function App() {
 
       {/* ============ MAIN ============ */}
       <main className="app-main">
-
         {/* Topbar */}
         <div className="topbar">
           <button
@@ -1436,14 +1937,19 @@ function App() {
             aria-label="Meniu"
             onClick={() => setMenuOpen((v) => !v)}
           >
-            <span /><span /><span />
+            <span />
+            <span />
+            <span />
           </button>
           <div className="topbar-search">
             <input
               type="text"
               placeholder="Caută client, contract, CUI…"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); if (step !== "salvate") setStep("salvate"); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                if (step !== "salvate") setStep("salvate");
+              }}
             />
             <span className="kbd-hint">⌘K</span>
           </div>
@@ -1455,7 +1961,11 @@ function App() {
           <Dashboard
             onNewContract={handleNewContract}
             onOpenContract={handleOpenFromFirestore}
-            onGoLibrary={(t) => setStep(t === "clienti" ? "biblioteca-clienti" : "biblioteca-contracte")}
+            onGoLibrary={(t) =>
+              setStep(
+                t === "clienti" ? "biblioteca-clienti" : "biblioteca-contracte",
+              )
+            }
             onGoReports={() => setStep("rapoarte")}
             onShowBlankTemplate={handleShowBlankTemplate}
           />
@@ -1502,13 +2012,17 @@ function App() {
                   icon: <Icon name="plus" />,
                   label: "Adaugă anexă",
                   desc: "Anexă nouă la contract",
-                  onClick: () => { addAnexa(); },
+                  onClick: () => {
+                    addAnexa();
+                  },
                 },
                 {
                   color: "#A3A3A3",
                   icon: <Icon name="check" />,
                   label: "Marchează trimis",
-                  desc: currentContractId ? "Scoate contractul din drafturi" : "Salvează contractul mai întâi",
+                  desc: currentContractId
+                    ? "Scoate contractul din drafturi"
+                    : "Salvează contractul mai întâi",
                   onClick: handleMarkTrimis,
                   disabled: !currentContractId,
                 },
@@ -1517,8 +2031,11 @@ function App() {
             <div className="dash" style={{ paddingTop: 0 }}>
               <div className="section-cap">Drafturi ({drafturi.length})</div>
               {drafturi.length === 0 ? (
-                <div style={{ padding: "16px 0", color: "#737373", fontSize: 13 }}>
-                  Niciun draft. Contractele salvate apar aici până le marchezi ca trimise.
+                <div
+                  style={{ padding: "16px 0", color: "#737373", fontSize: 13 }}
+                >
+                  Niciun draft. Contractele salvate apar aici până le marchezi
+                  ca trimise.
                 </div>
               ) : (
                 <div className="qa-grid">
@@ -1528,25 +2045,39 @@ function App() {
                       className="qa"
                       style={{ "--qa-color": "#F59E0B", cursor: "default" }}
                     >
-                      <div className="qa-icon"><Icon name="edit-doc" /></div>
+                      <div className="qa-icon">
+                        <Icon name="edit-doc" />
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="qa-label">
-                          {d.numeBeneficiar || "(fără beneficiar)"} · #{d.numarContract || "—"}
+                          {d.numeBeneficiar || "(fără beneficiar)"} · #
+                          {d.numarContract || "—"}
                         </div>
                         <div className="qa-desc">
-                          {fmt(d.total || 0)} LEI · {(d.updatedAt || "").slice(0, 10)}
+                          {fmt(d.total || 0)} LEI ·{" "}
+                          {(d.updatedAt || "").slice(0, 10)}
                         </div>
                         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                           <button
                             type="button"
                             className="pill"
-                            onClick={(e) => { e.stopPropagation(); handleOpenDraft(d.id); }}
-                          >Deschide</button>
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDraft(d.id);
+                            }}
+                          >
+                            Deschide
+                          </button>
                           <button
                             type="button"
                             className="pill warn"
-                            onClick={(e) => { e.stopPropagation(); handleDeleteDraft(d.id); }}
-                          >Șterge</button>
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteDraft(d.id);
+                            }}
+                          >
+                            Șterge
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1594,21 +2125,74 @@ function App() {
             title="Sistem"
             subtitle="Operațiuni asupra datelor — backup, import, export."
             cards={[
-              { color: "#10B981", icon: <Icon name="download" />, label: "Export JSON", desc: "Exportă contractul curent", onClick: onExport },
-              { color: "#1F7A3B", icon: <Icon name="download" />, label: "Export Excel", desc: "Workbook .xlsx — TOATE contractele, anexele și beneficiarii (fără filtre)", onClick: async () => {
-                if (!(await confirm("Vei exporta TOATE contractele, anexele și beneficiarii (fără filtre). Continui?", { confirmLabel: "Exportă tot" }))) return;
-                try {
-                  const r = await exportAllExcel();
-                  await alert(`Export complet: ${r.contracte} contracte, ${r.anexe} anexe, ${r.beneficiari} beneficiari.`, { variant: "success" });
-                } catch (e) {
-                  await alert("Eroare la export Excel: " + e.message, { variant: "danger" });
-                }
-              } },
-              { color: "#34CAE8", icon: <Icon name="upload" />, label: "Import JSON", desc: "Încarcă contract din JSON", onClick: () => fileRef.current?.click() },
-              { color: "#F59E0B", icon: <Icon name="download" />, label: "Backup DB", desc: "Backup integral baza locală", onClick: handleExportBackup },
-              { color: "#EF4444", icon: <Icon name="upload" />, label: "Restaurează backup", desc: "Restaurează din backup", onClick: () => backupFileRef.current?.click() },
-              { color: "#8B5CF6", icon: <Icon name="inbox-down" />, label: "Import .docx / PDF", desc: "Pre-populează din Word/PDF", onClick: () => docFileRef.current?.click() },
-              { color: "#0EA5E9", icon: <Icon name="user" />, label: "Contul meu", desc: "Parolă, email, telefon", onClick: () => setStep("cont") },
+              {
+                color: "#10B981",
+                icon: <Icon name="download" />,
+                label: "Export JSON",
+                desc: "Exportă contractul curent",
+                onClick: onExport,
+              },
+              {
+                color: "#1F7A3B",
+                icon: <Icon name="download" />,
+                label: "Export Excel",
+                desc: "Workbook .xlsx — TOATE contractele, anexele și beneficiarii (fără filtre)",
+                onClick: async () => {
+                  if (
+                    !(await confirm(
+                      "Vei exporta TOATE contractele, anexele și beneficiarii (fără filtre). Continui?",
+                      { confirmLabel: "Exportă tot" },
+                    ))
+                  )
+                    return;
+                  try {
+                    const r = await exportAllExcel();
+                    await alert(
+                      `Export complet: ${r.contracte} contracte, ${r.anexe} anexe, ${r.beneficiari} beneficiari.`,
+                      { variant: "success" },
+                    );
+                  } catch (e) {
+                    await alert("Eroare la export Excel: " + e.message, {
+                      variant: "danger",
+                    });
+                  }
+                },
+              },
+              {
+                color: "#34CAE8",
+                icon: <Icon name="upload" />,
+                label: "Import JSON",
+                desc: "Încarcă contract din JSON",
+                onClick: () => fileRef.current?.click(),
+              },
+              {
+                color: "#F59E0B",
+                icon: <Icon name="download" />,
+                label: "Backup DB",
+                desc: "Backup integral baza locală",
+                onClick: handleExportBackup,
+              },
+              {
+                color: "#EF4444",
+                icon: <Icon name="upload" />,
+                label: "Restaurează backup",
+                desc: "Restaurează din backup",
+                onClick: () => backupFileRef.current?.click(),
+              },
+              {
+                color: "#8B5CF6",
+                icon: <Icon name="inbox-down" />,
+                label: "Import .docx / PDF",
+                desc: "Pre-populează din Word/PDF",
+                onClick: () => docFileRef.current?.click(),
+              },
+              {
+                color: "#0EA5E9",
+                icon: <Icon name="user" />,
+                label: "Contul meu",
+                desc: "Parolă, email, telefon",
+                onClick: () => setStep("cont"),
+              },
             ]}
           />
         )}
@@ -1618,833 +2202,1401 @@ function App() {
 
         {/* Content */}
         {!isDashboard && !isRapoarte && !isHub && !isCont && (
-        <div className={`content ${isSaved ? "single" : ""}`}>
-
-          {/* Flux tabs (sticky) */}
-          {!isSaved && (isClient || isAnnex) && (() => {
-            const N = anexe.length;
-            const W = 5;
-            let start, end;
-            if (N <= W) { start = 0; end = N; }
-            else if (anexaIdx == null) { start = N - W; end = N; }
-            else {
-              start = Math.max(0, Math.min(anexaIdx - 2, N - W));
-              end = start + W;
-            }
-            const hiddenBefore = anexe.slice(0, start).map((a, i) => ({ a, i }));
-            const hiddenAfter = anexe.slice(end).map((a, i) => ({ a, i: end + i }));
-            const hidden = [...hiddenBefore, ...hiddenAfter];
-            const canAddAnexa = !(clientData.tipContract === "unic" && anexe.length >= 1);
-            return (
-              <div className="flux-tabs">
-                <button
-                  type="button"
-                  className={`flux-tab ${isClient ? "on" : ""}`}
-                  onClick={() => setStep("client")}
-                >Beneficiar</button>
-                {anexe.slice(start, end).map((a, i) => {
-                  const idx = start + i;
-                  const active = step === `anexa-${idx}`;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      className={`flux-tab ${active ? "on" : ""}`}
-                      title={a.eventData.scop || `Anexa ${idx + 1}`}
-                      onClick={() => setStep(`anexa-${idx}`)}
-                    >
-                      <span className="ft-mono">A{anexaNr(clientData.anexaStart, a.eventData.numarAnexa, idx)}</span>
-                    </button>
-                  );
-                })}
-                {hidden.length > 0 && (
-                  <div className="flux-overflow">
+          <div className={`content ${isSaved ? "single" : ""}`}>
+            {/* Flux tabs (sticky) */}
+            {!isSaved &&
+              (isClient || isAnnex) &&
+              (() => {
+                const N = anexe.length;
+                const W = 5;
+                let start, end;
+                if (N <= W) {
+                  start = 0;
+                  end = N;
+                } else if (anexaIdx == null) {
+                  start = N - W;
+                  end = N;
+                } else {
+                  start = Math.max(0, Math.min(anexaIdx - 2, N - W));
+                  end = start + W;
+                }
+                const hiddenBefore = anexe
+                  .slice(0, start)
+                  .map((a, i) => ({ a, i }));
+                const hiddenAfter = anexe
+                  .slice(end)
+                  .map((a, i) => ({ a, i: end + i }));
+                const hidden = [...hiddenBefore, ...hiddenAfter];
+                const canAddAnexa = !(
+                  clientData.tipContract === "unic" && anexe.length >= 1
+                );
+                return (
+                  <div className="flux-tabs">
                     <button
                       type="button"
-                      className="flux-tab overflow-trigger"
-                      aria-expanded={fluxOverflowOpen}
-                      onClick={() => setFluxOverflowOpen((v) => !v)}
-                      title="Toate anexele"
+                      className={`flux-tab ${isClient ? "on" : ""}`}
+                      onClick={() => setStep("client")}
                     >
-                      <span className="ft-count">{N}</span>
-                      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M3 4.5l3 3 3-3" />
-                      </svg>
+                      Beneficiar
                     </button>
-                    {fluxOverflowOpen && (
+                    {anexe.slice(start, end).map((a, i) => {
+                      const idx = start + i;
+                      const active = step === `anexa-${idx}`;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          className={`flux-tab ${active ? "on" : ""}`}
+                          title={a.eventData.scop || `Anexa ${idx + 1}`}
+                          onClick={() => setStep(`anexa-${idx}`)}
+                        >
+                          <span className="ft-mono">
+                            A
+                            {anexaNr(
+                              clientData.anexaStart,
+                              a.eventData.numarAnexa,
+                              idx,
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {hidden.length > 0 && (
+                      <div className="flux-overflow">
+                        <button
+                          type="button"
+                          className="flux-tab overflow-trigger"
+                          aria-expanded={fluxOverflowOpen}
+                          onClick={() => setFluxOverflowOpen((v) => !v)}
+                          title="Toate anexele"
+                        >
+                          <span className="ft-count">{N}</span>
+                          <svg
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M3 4.5l3 3 3-3" />
+                          </svg>
+                        </button>
+                        {fluxOverflowOpen && (
+                          <>
+                            <div
+                              className="flux-overflow-backdrop"
+                              onClick={() => setFluxOverflowOpen(false)}
+                            />
+                            <div className="flux-overflow-menu">
+                              {anexe.map((a, i) => {
+                                const visible = i >= start && i < end;
+                                const active = step === `anexa-${i}`;
+                                return (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    className={`flux-overflow-item ${visible ? "visible" : ""} ${active ? "active" : ""}`}
+                                    onClick={() => {
+                                      setStep(`anexa-${i}`);
+                                      setFluxOverflowOpen(false);
+                                    }}
+                                  >
+                                    <span className="oi-num">
+                                      A
+                                      {anexaNr(
+                                        clientData.anexaStart,
+                                        a.eventData.numarAnexa,
+                                        i,
+                                      )}
+                                    </span>
+                                    <span className="oi-label">
+                                      {a.eventData.scop || "—"}
+                                    </span>
+                                    <span className="oi-val">
+                                      {fmt(sumBudget(a.budgetData))}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {canAddAnexa && (
+                      <button
+                        type="button"
+                        className="flux-tab add"
+                        onClick={addAnexa}
+                        title="Adaugă anexă"
+                      >
+                        <Icon name="plus" />
+                        <span>Anexă</span>
+                      </button>
+                    )}
+                    <div style={{ flex: 1 }} />
+                    {isAnnex && (
                       <>
-                        <div className="flux-overflow-backdrop" onClick={() => setFluxOverflowOpen(false)} />
-                        <div className="flux-overflow-menu">
-                          {anexe.map((a, i) => {
-                            const visible = i >= start && i < end;
-                            const active = step === `anexa-${i}`;
-                            return (
-                              <button
-                                key={i}
-                                type="button"
-                                className={`flux-overflow-item ${visible ? "visible" : ""} ${active ? "active" : ""}`}
-                                onClick={() => { setStep(`anexa-${i}`); setFluxOverflowOpen(false); }}
-                              >
-                                <span className="oi-num">A{anexaNr(clientData.anexaStart, a.eventData.numarAnexa, i)}</span>
-                                <span className="oi-label">{a.eventData.scop || "—"}</span>
-                                <span className="oi-val">{fmt(sumBudget(a.budgetData))}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                        {canAddAnexa && (
+                          <button
+                            type="button"
+                            className="btn ghost btn-sm"
+                            onClick={() => duplicateAnexa(anexaIdx)}
+                          >
+                            Duplică
+                          </button>
+                        )}
+                        {anexe.length > 1 && (
+                          <button
+                            type="button"
+                            className="btn ghost danger btn-sm"
+                            onClick={() => removeAnexa(anexaIdx)}
+                          >
+                            Șterge
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
-                )}
-                {canAddAnexa && (
-                  <button
-                    type="button"
-                    className="flux-tab add"
-                    onClick={addAnexa}
-                    title="Adaugă anexă"
-                  >
-                    <Icon name="plus" />
-                    <span>Anexă</span>
-                  </button>
-                )}
-                <div style={{ flex: 1 }} />
-                {isAnnex && (
-                  <>
-                    {canAddAnexa && (
-                      <button type="button" className="btn ghost btn-sm" onClick={() => duplicateAnexa(anexaIdx)}>Duplică</button>
-                    )}
-                    {anexe.length > 1 && (
-                      <button type="button" className="btn ghost danger btn-sm" onClick={() => removeAnexa(anexaIdx)}>Șterge</button>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })()}
+                );
+              })()}
 
-          {/* Page head */}
-          {!isSaved && (
-            <div className="page-head">
-              <div>
-                <div className="eyebrow">
-                  {clientData.tipContract === "unic" ? "Eveniment unic" : "Contract cadru"} · {anexe.length} {anexe.length === 1 ? "anexă" : "anexe"}
-                </div>
-                <h1>
-                  {clientData.numeBeneficiar
-                    ? <>Contract pentru <em>{clientData.numeBeneficiar}</em></>
-                    : <em>Contract nou</em>}
-                </h1>
-                {clientData.numeBeneficiar && (
-                  <div className="sub">
-                    Servicii profesionale conform clauzelor contract-cadru și anexelor aferente.
+            {/* Page head */}
+            {!isSaved && (
+              <div className="page-head">
+                <div>
+                  <div className="eyebrow">
+                    {clientData.tipContract === "unic"
+                      ? "Eveniment unic"
+                      : "Contract cadru"}{" "}
+                    · {anexe.length} {anexe.length === 1 ? "anexă" : "anexe"}
                   </div>
-                )}
-              </div>
-              <div className="page-head-right">
-                <div className="ph-label">Data emitere</div>
-                <label className="date-3up clickable" title="Schimbă data emiterii">
-                  {(() => {
-                    const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(clientData.dataContract || "");
-                    return m
-                      ? <><span>{m[1]}</span><i>·</i><span>{m[2]}</span><i>·</i><span>{m[3]}</span></>
-                      : <span>—</span>;
-                  })()}
-                  <input
-                    type="date"
-                    value={(() => {
-                      const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(clientData.dataContract || "");
-                      return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
-                    })()}
-                    onChange={(e) => setClientData({ ...clientData, dataContract: normalizeDate(e.target.value) })}
-                  />
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* LEFT COLUMN */}
-          <div className="left-col">
-
-            {/* CLIENT STEP */}
-            {isClient && (
-              <section className="card">
-                <div
-                  className="card-strip"
-                  style={{
-                    borderTop: "none",
-                    borderBottom: "1px solid var(--line)",
-                  }}
-                >
-                  <div className="strip-cell">
-                    <div className="cell-label">Contract</div>
-                    <div className="cell-value mono">{clientData.numarContract || "—"}</div>
-                  </div>
-                  <div className="strip-cell wide">
-                    <div className="cell-label">Valabilitate</div>
-                    <div className="cell-value">
-                      Emitere <strong>{clientData.dataContract || "—"}</strong>
-                      {clientData.tipContract === "unic" ? (
-                        <> · Valabil până la predarea materialelor și încasarea integrală</>
-                      ) : (
-                        clientData.dataExpirare && <> · Valabil până la <strong>{clientData.dataExpirare}</strong></>
-                      )}
+                  <h1>
+                    {clientData.numeBeneficiar ? (
+                      <>
+                        Contract pentru <em>{clientData.numeBeneficiar}</em>
+                      </>
+                    ) : (
+                      <em>Contract nou</em>
+                    )}
+                  </h1>
+                  {clientData.numeBeneficiar && (
+                    <div className="sub">
+                      Servicii profesionale conform clauzelor contract-cadru și
+                      anexelor aferente.
                     </div>
-                  </div>
-                  <button type="button" className="strip-action" onClick={generateContractNumber}>
-                    Generează nr.
-                  </button>
-                  <button type="button" className="strip-action" onClick={handleSetStartNumber} title="Setează numărul de pornire pentru numerotarea automată">
-                    Start nr.
-                  </button>
-                  <button
-                    type="button"
-                    className="strip-action with-date"
-                    onClick={(e) => {
-                      const inp = e.currentTarget.querySelector('input[type="date"]');
-                      if (inp?.showPicker) inp.showPicker();
-                      else inp?.focus();
-                    }}
+                  )}
+                </div>
+                <div className="page-head-right">
+                  <div className="ph-label">Data emitere</div>
+                  <label
+                    className="date-3up clickable"
+                    title="Schimbă data emiterii"
                   >
-                    <span><Icon name="calendar" /></span>
-                    <span>Schimbă emiterea</span>
+                    {(() => {
+                      const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(
+                        clientData.dataContract || "",
+                      );
+                      return m ? (
+                        <>
+                          <span>{m[1]}</span>
+                          <i>·</i>
+                          <span>{m[2]}</span>
+                          <i>·</i>
+                          <span>{m[3]}</span>
+                        </>
+                      ) : (
+                        <span>—</span>
+                      );
+                    })()}
                     <input
                       type="date"
-                      tabIndex={-1}
                       value={(() => {
-                        const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(clientData.dataContract || "");
+                        const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(
+                          clientData.dataContract || "",
+                        );
                         return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
                       })()}
-                      onChange={(e) => setClientData({ ...clientData, dataContract: normalizeDate(e.target.value) })}
+                      onChange={(e) =>
+                        setClientData({
+                          ...clientData,
+                          dataContract: normalizeDate(e.target.value),
+                        })
+                      }
                     />
-                  </button>
-                  {clientData.tipContract === "cadru" && (
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* LEFT COLUMN */}
+            <div className="left-col">
+              {/* CLIENT STEP */}
+              {isClient && (
+                <section className="card">
+                  <div
+                    className="card-strip"
+                    style={{
+                      borderTop: "none",
+                      borderBottom: "1px solid var(--line)",
+                    }}
+                  >
+                    <div className="strip-cell">
+                      <div className="cell-label">Contract</div>
+                      <div className="cell-value mono">
+                        {clientData.numarContract || "—"}
+                      </div>
+                    </div>
+                    <div className="strip-cell wide">
+                      <div className="cell-label">Valabilitate</div>
+                      <div className="cell-value">
+                        Emitere{" "}
+                        <strong>{clientData.dataContract || "—"}</strong>
+                        {clientData.tipContract === "unic" ? (
+                          <>
+                            {" "}
+                            · Valabil până la predarea materialelor și încasarea
+                            integrală
+                          </>
+                        ) : (
+                          clientData.dataExpirare && (
+                            <>
+                              {" "}
+                              · Valabil până la{" "}
+                              <strong>{clientData.dataExpirare}</strong>
+                            </>
+                          )
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="strip-action"
+                      onClick={generateContractNumber}
+                    >
+                      Generează nr.
+                    </button>
+                    <button
+                      type="button"
+                      className="strip-action"
+                      onClick={handleSetStartNumber}
+                      title="Setează numărul de pornire pentru numerotarea automată"
+                    >
+                      Start nr.
+                    </button>
                     <button
                       type="button"
                       className="strip-action with-date"
                       onClick={(e) => {
-                        const inp = e.currentTarget.querySelector('input[type="date"]');
+                        const inp =
+                          e.currentTarget.querySelector('input[type="date"]');
                         if (inp?.showPicker) inp.showPicker();
                         else inp?.focus();
                       }}
                     >
-                      <span><Icon name="calendar" /></span>
-                      <span>Schimbă valabilitate</span>
+                      <span>
+                        <Icon name="calendar" />
+                      </span>
+                      <span>Schimbă emiterea</span>
                       <input
                         type="date"
                         tabIndex={-1}
                         value={(() => {
-                          const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(clientData.dataExpirare || "");
+                          const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(
+                            clientData.dataContract || "",
+                          );
                           return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
                         })()}
-                        onChange={(e) => setClientData({ ...clientData, dataExpirare: normalizeDate(e.target.value) })}
+                        onChange={(e) =>
+                          setClientData({
+                            ...clientData,
+                            dataContract: normalizeDate(e.target.value),
+                          })
+                        }
                       />
                     </button>
-                  )}
-                </div>
-                <div className="section">
-                  <div className="section-head">
-                    <span className="idx">01</span>
-                    <h2>Beneficiar</h2>
-                    <span className="helper">Datele se completează automat din ANAF după CUI.</span>
+                    {clientData.tipContract === "cadru" && (
+                      <button
+                        type="button"
+                        className="strip-action with-date"
+                        onClick={(e) => {
+                          const inp =
+                            e.currentTarget.querySelector('input[type="date"]');
+                          if (inp?.showPicker) inp.showPicker();
+                          else inp?.focus();
+                        }}
+                      >
+                        <span>
+                          <Icon name="calendar" />
+                        </span>
+                        <span>Schimbă valabilitate</span>
+                        <input
+                          type="date"
+                          tabIndex={-1}
+                          value={(() => {
+                            const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(
+                              clientData.dataExpirare || "",
+                            );
+                            return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+                          })()}
+                          onChange={(e) =>
+                            setClientData({
+                              ...clientData,
+                              dataExpirare: normalizeDate(e.target.value),
+                            })
+                          }
+                        />
+                      </button>
+                    )}
                   </div>
-
-                  <div className="grid-2" style={{ marginBottom: 14 }}>
-                    <div className="field">
-                      <label>Tip contract</label>
-                      <div className="segmented">
-                        <button
-                          type="button"
-                          className={clientData.tipContract === "cadru" ? "on" : ""}
-                          onClick={() => setClientData((prev) => ({
-                            ...prev,
-                            tipContract: "cadru",
-                            dataExpirare: prev.dataExpirare || addMonths(prev.dataContract || todayDmy(), 12),
-                          }))}
-                        >Cadru · multiple anexe</button>
-                        <button
-                          type="button"
-                          className={clientData.tipContract === "unic" ? "on" : ""}
-                          onClick={async () => {
-                            if (anexe.length > 1) {
-                              const ok = await confirm(
-                                `Tipul „Eveniment unic” permite o singură anexă. Vor fi șterse ${anexe.length - 1} anexe. Continui?`,
-                                { variant: "danger", confirmLabel: "Schimbă tipul" }
-                              );
-                              if (!ok) return;
-                              setAnexe((prev) => prev.slice(0, 1));
-                            }
-                            setClientData((prev) => ({ ...prev, tipContract: "unic", dataExpirare: "" }));
-                          }}
-                        >Eveniment unic</button>
-                      </div>
+                  <div className="section">
+                    <div className="section-head">
+                      <span className="idx">01</span>
+                      <h2>Beneficiar</h2>
+                      <span className="helper">
+                        Datele se completează automat din ANAF după CUI.
+                      </span>
                     </div>
-                    <div className="field">
-                      <label>Client salvat</label>
-                      {(() => {
-                        const map = new Map();
-                        for (const c of listClientHistory()) {
-                          if (c?.cui) map.set(c.cui, c);
-                        }
-                        for (const b of beneficiariV2) {
-                          if (b?.cui) map.set(b.cui, { ...(map.get(b.cui) || {}), ...b });
-                        }
-                        const lista = Array.from(map.values()).sort((a, b) =>
-                          String(a.numeBeneficiar || "").localeCompare(String(b.numeBeneficiar || ""), "ro")
-                        );
-                        return (
-                          <select
-                            value=""
-                            onChange={(e) => {
-                              const c = map.get(e.target.value);
-                              if (!c) return;
+
+                    <div className="grid-2" style={{ marginBottom: 14 }}>
+                      <div className="field">
+                        <label>Tip contract</label>
+                        <div className="segmented">
+                          <button
+                            type="button"
+                            className={
+                              clientData.tipContract === "cadru" ? "on" : ""
+                            }
+                            onClick={() =>
                               setClientData((prev) => ({
                                 ...prev,
-                                numeBeneficiar: c.numeBeneficiar || "",
-                                cui: c.cui || "",
-                                nrRegCom: c.nrRegCom || "",
-                                sediu: c.sediu || "",
-                                reprezentant: c.reprezentant || "",
-                                telefon: c.telefon || "",
-                                email: c.email || "",
-                                iban: c.iban || "",
-                                banca: c.banca || "",
+                                tipContract: "cadru",
+                                dataExpirare:
+                                  prev.dataExpirare ||
+                                  addMonths(
+                                    prev.dataContract || todayDmy(),
+                                    12,
+                                  ),
+                              }))
+                            }
+                          >
+                            Cadru · multiple anexe
+                          </button>
+                          <button
+                            type="button"
+                            className={
+                              clientData.tipContract === "unic" ? "on" : ""
+                            }
+                            onClick={async () => {
+                              if (anexe.length > 1) {
+                                const ok = await confirm(
+                                  `Tipul „Eveniment unic” permite o singură anexă. Vor fi șterse ${anexe.length - 1} anexe. Continui?`,
+                                  {
+                                    variant: "danger",
+                                    confirmLabel: "Schimbă tipul",
+                                  },
+                                );
+                                if (!ok) return;
+                                setAnexe((prev) => prev.slice(0, 1));
+                              }
+                              setClientData((prev) => ({
+                                ...prev,
+                                tipContract: "unic",
+                                dataExpirare: "",
                               }));
                             }}
                           >
-                            <option value="">— alege din istoric ({lista.length}) —</option>
-                            {lista.map((c) => (
-                              <option key={c.cui} value={c.cui}>
-                                {c.numeBeneficiar || "(fără nume)"} ({c.cui})
-                              </option>
-                            ))}
-                          </select>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 14, cursor: "pointer", fontSize: 13 }}>
-                    <input
-                      type="checkbox"
-                      checked={!!clientData.includeVideo}
-                      onChange={(e) => setClientData((prev) => ({ ...prev, includeVideo: e.target.checked }))}
-                    />
-                    Include servicii videografice (la nivel de contract)
-                  </label>
-
-                  <div className="grid-2">
-                    <div className="field">
-                      <label>CUI / CNP <span className="req">●</span></label>
-                      <div className="input-with-action">
-                        <input
-                          type="text"
-                          name="cui"
-                          value={clientData.cui}
-                          onChange={handleClientChange}
-                          onBlur={autoFetchAnaf}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") { e.preventDefault(); autoFetchAnaf(true); }
-                          }}
-                          style={{ borderColor: clientData.cui && !validateCUI(clientData.cui) ? "var(--danger)" : undefined }}
-                        />
-                        <button type="button" className="input-action" onClick={() => autoFetchAnaf(true)} title="Caută la ANAF">
-                          ANAF <Icon name="refresh" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="field">
-                      <label>Reg. Comerțului</label>
-                      <input
-                        type="text"
-                        name="nrRegCom"
-                        value={clientData.nrRegCom}
-                        onChange={handleClientChange}
-                      />
-                    </div>
-
-                    {[
-                      ["numeBeneficiar", "Denumire beneficiar", true],
-                      ["reprezentant", "Reprezentant legal", true],
-                    ].map(([name, label, required]) => (
-                      <div className="field" key={name}>
-                        <label>{label} {required && <span className="req">●</span>}</label>
-                        <input
-                          type="text"
-                          name={name}
-                          value={clientData[name]}
-                          onChange={handleClientChange}
-                        />
-                        {name === "numeBeneficiar" && anafSyncAt && (
-                          <span className="hint sync-ok">
-                            ✓ Sincronizat cu ANAF · {anafSyncAt.toLocaleDateString("ro-RO", { day: "numeric", month: "long", year: "numeric" })}, {anafSyncAt.toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-
-                    <div className="field col-span-2">
-                      <label>Sediu / Domiciliu</label>
-                      <input
-                        type="text"
-                        name="sediu"
-                        value={clientData.sediu}
-                        onChange={handleClientChange}
-                      />
-                    </div>
-
-                    {[
-                      ["telefon", "Telefon"],
-                      ["email", "Email"],
-                      ["iban", "Cont bancar (IBAN)"],
-                      ["banca", "Banca"],
-                    ].map(([name, label]) => {
-                      const span = 1;
-                      const required = false;
-                      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                      const invalid =
-                        (name === "iban" && clientData.iban && !validateIBAN(clientData.iban)) ||
-                        (name === "email" && clientData.email && !emailRe.test(clientData.email));
-                      const inputType = name === "email" ? "email" : name === "telefon" ? "tel" : "text";
-                      const onKey =
-                        name === "telefon"
-                          ? (e) => {
-                              if (e.key.length === 1 && !/[\d+\s\-()]/.test(e.key) && !e.ctrlKey && !e.metaKey)
-                                e.preventDefault();
-                            }
-                          : undefined;
-                      const onChange =
-                        name === "telefon"
-                          ? (e) => {
-                              const v = e.target.value.replace(/[^\d+\s\-()]/g, "");
-                              handleClientChange({ target: { name, value: v } });
-                            }
-                          : handleClientChange;
-                      return (
-                        <div className={`field ${span === 2 ? "col-span-2" : ""}`} key={name}>
-                          <label>{label} {required && <span className="req">●</span>}</label>
-                          <input
-                            type={inputType}
-                            name={name}
-                            value={clientData[name]}
-                            onChange={onChange}
-                            onKeyDown={onKey}
-                            inputMode={name === "telefon" ? "tel" : undefined}
-                            style={{ borderColor: invalid ? "var(--danger)" : undefined }}
-                          />
-                          {invalid && <span className="hint" style={{ color: "var(--danger)" }}>Format invalid</span>}
+                            Eveniment unic
+                          </button>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-              </section>
-            )}
-
-            {/* ANEXA STEP */}
-            {isAnnex && (
-              <section className="card">
-                <div className="card-strip">
-                  <div className="strip-cell">
-                    <div className="cell-label">Contract</div>
-                    <div className="cell-value mono">{clientData.numarContract || "—"}</div>
-                  </div>
-                  <div className="strip-cell">
-                    <div className="cell-label">Anexă nr.</div>
-                    <div className="cell-value">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={currentAnexa.eventData.numarAnexa}
-                        placeholder={anexaNr(clientData.anexaStart, "", anexaIdx)}
-                        onChange={(e) => updateAnexa(anexaIdx, "eventData", "numarAnexa", e.target.value)}
-                        style={{
-                          width: 48,
-                          padding: 0,
-                          border: "none",
-                          background: "transparent",
-                          font: "inherit",
-                          fontWeight: 700,
-                          color: "inherit",
-                          outline: "none",
-                        }}
-                        title="Gol = numerotare automată în ordine"
-                      />
-                      {!currentAnexa.eventData.numarAnexa && (
-                        <> <span style={{ color: "var(--muted)" }}>auto</span></>
-                      )}
-                    </div>
-                  </div>
-                  <div className="strip-cell wide">
-                    <div className="cell-label">Emitere anexă</div>
-                    <div className="cell-value">
-                      <strong>{currentAnexa.eventData.dataEmitere || clientData.dataContract || "—"}</strong>
-                      {!currentAnexa.eventData.dataEmitere && clientData.dataContract && (
-                        <> · <span style={{ color: "var(--muted)" }}>preia data contractului</span></>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-                  <button
-                    type="button"
-                    className="strip-action"
-                    onClick={handleSetAnexaStart}
-                    title="Numărul de la care încep anexele acestui contract"
-                  >
-                    Start nr. anexe
-                  </button>
-                  <button
-                    type="button"
-                    className="strip-action with-date"
-                    onClick={(e) => {
-                      const inp = e.currentTarget.querySelector('input[type="date"]');
-                      if (inp?.showPicker) inp.showPicker();
-                      else inp?.focus();
-                    }}
-                  >
-                    <span><Icon name="calendar" /></span>
-                    <span>Schimbă emiterea</span>
-                    <input
-                      type="date"
-                      tabIndex={-1}
-                      value={(() => {
-                        const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(currentAnexa.eventData.dataEmitere || "");
-                        return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
-                      })()}
-                      onChange={(e) => updateAnexa(anexaIdx, "eventData", "dataEmitere", normalizeDate(e.target.value))}
-                    />
-                  </button>
-                  {currentAnexa.eventData.dataEmitere && (
-                    <button
-                      type="button"
-                      className="strip-action"
-                      onClick={() => updateAnexa(anexaIdx, "eventData", "dataEmitere", "")}
-                      title="Revino la data contractului"
-                    >
-                      Reset
-                    </button>
-                  )}
-                  </div>
-                </div>
-
-                <div className="section">
-                  <div className="section-head">
-                    <span className="idx">02 · A{anexaIdx + 1}</span>
-                    <h2>Detalii eveniment</h2>
-                  </div>
-
-                  <div style={{ marginBottom: 14 }}>
-                    <div className="field">
-                      <label>Scop / nume eveniment <span className="req">●</span></label>
-                      <input
-                        type="text"
-                        value={currentAnexa.eventData.scop}
-                        onChange={(e) => updateAnexa(anexaIdx, "eventData", "scop", e.target.value)}
-                      />
-                    </div>
-                    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer", fontSize: 13 }}>
-                      <input
-                        type="checkbox"
-                        checked={!!currentAnexa.eventData.includeVideo}
-                        onChange={(e) => updateAnexa(anexaIdx, "eventData", "includeVideo", e.target.checked)}
-                      />
-                      Include servicii videografice
-                    </label>
-                  </div>
-
-                  <div className="grid-3">
-                    {dateField(
-                      currentAnexa.eventData.dataEveniment,
-                      (e) => updateAnexa(anexaIdx, "eventData", "dataEveniment", e.target.value),
-                      "Data evenimentului"
-                    )}
-
-                    <div className="field col-span-2" style={{ position: "relative" }}>
-                      <label>Locație <span className="req">●</span></label>
-                      <input
-                        type="text"
-                        value={currentAnexa.eventData.locatie}
-                        onChange={(e) => onLocationChange(anexaIdx, e.target.value)}
-                        onBlur={(e) => {
-                          saveLocation(e.target.value);
-                          setTimeout(() => setLocationSuggestions([]), 200);
-                        }}
-                      />
-                      {locationSuggestions.length > 0 && (
-                        <ul className="suggest">
-                          {locationSuggestions.map((l) => (
-                            <li
-                              key={l}
-                              onMouseDown={() => {
-                                updateAnexa(anexaIdx, "eventData", "locatie", l);
-                                saveLocation(l);
-                                setLocationSuggestions([]);
+                      </div>
+                      <div className="field">
+                        <label>Client salvat</label>
+                        {(() => {
+                          const map = new Map();
+                          for (const c of listClientHistory()) {
+                            if (c?.cui) map.set(c.cui, c);
+                          }
+                          for (const b of beneficiariV2) {
+                            if (b?.cui)
+                              map.set(b.cui, {
+                                ...(map.get(b.cui) || {}),
+                                ...b,
+                              });
+                          }
+                          const lista = Array.from(map.values()).sort((a, b) =>
+                            String(a.numeBeneficiar || "").localeCompare(
+                              String(b.numeBeneficiar || ""),
+                              "ro",
+                            ),
+                          );
+                          return (
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                const c = map.get(e.target.value);
+                                if (!c) return;
+                                setClientData((prev) => ({
+                                  ...prev,
+                                  numeBeneficiar: c.numeBeneficiar || "",
+                                  cui: c.cui || "",
+                                  nrRegCom: c.nrRegCom || "",
+                                  sediu: c.sediu || "",
+                                  reprezentant: c.reprezentant || "",
+                                  telefon: c.telefon || "",
+                                  email: c.email || "",
+                                  iban: c.iban || "",
+                                  banca: c.banca || "",
+                                }));
                               }}
                             >
-                              {l}
-                            </li>
+                              <option value="">
+                                — alege din istoric ({lista.length}) —
+                              </option>
+                              {lista.map((c) => (
+                                <option key={c.cui} value={c.cui}>
+                                  {c.numeBeneficiar || "(fără nume)"} ({c.cui})
+                                </option>
+                              ))}
+                            </select>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    <label
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        marginBottom: 14,
+                        cursor: "pointer",
+                        fontSize: 13,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!clientData.includeVideo}
+                        onChange={(e) =>
+                          setClientData((prev) => ({
+                            ...prev,
+                            includeVideo: e.target.checked,
+                          }))
+                        }
+                      />
+                      Include servicii videografice (la nivel de contract)
+                    </label>
+
+                    <div className="grid-2">
+                      <div className="field">
+                        <label>
+                          CUI / CNP <span className="req">●</span>
+                        </label>
+                        <div className="input-with-action">
+                          <input
+                            type="text"
+                            name="cui"
+                            value={clientData.cui}
+                            onChange={handleClientChange}
+                            onBlur={autoFetchAnaf}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                autoFetchAnaf(true);
+                              }
+                            }}
+                            style={{
+                              borderColor:
+                                clientData.cui && !validateCUI(clientData.cui)
+                                  ? "var(--danger)"
+                                  : undefined,
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="input-action"
+                            onClick={() => autoFetchAnaf(true)}
+                            title="Caută la ANAF"
+                          >
+                            ANAF <Icon name="refresh" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label>Reg. Comerțului</label>
+                        <input
+                          type="text"
+                          name="nrRegCom"
+                          value={clientData.nrRegCom}
+                          onChange={handleClientChange}
+                        />
+                      </div>
+
+                      {[
+                        ["numeBeneficiar", "Denumire beneficiar", true],
+                        ["reprezentant", "Reprezentant legal", true],
+                      ].map(([name, label, required]) => (
+                        <div className="field" key={name}>
+                          <label>
+                            {label} {required && <span className="req">●</span>}
+                          </label>
+                          <input
+                            type="text"
+                            name={name}
+                            value={clientData[name]}
+                            onChange={handleClientChange}
+                          />
+                          {name === "numeBeneficiar" && anafSyncAt && (
+                            <span className="hint sync-ok">
+                              ✓ Sincronizat cu ANAF ·{" "}
+                              {anafSyncAt.toLocaleDateString("ro-RO", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                              ,{" "}
+                              {anafSyncAt.toLocaleTimeString("ro-RO", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+
+                      <div className="field col-span-2">
+                        <label>Sediu / Domiciliu</label>
+                        <input
+                          type="text"
+                          name="sediu"
+                          value={clientData.sediu}
+                          onChange={handleClientChange}
+                        />
+                      </div>
+
+                      {[
+                        ["telefon", "Telefon"],
+                        ["email", "Email"],
+                        ["iban", "Cont bancar (IBAN)"],
+                        ["banca", "Banca"],
+                      ].map(([name, label]) => {
+                        const span = 1;
+                        const required = false;
+                        const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        const invalid =
+                          (name === "iban" &&
+                            clientData.iban &&
+                            !validateIBAN(clientData.iban)) ||
+                          (name === "email" &&
+                            clientData.email &&
+                            !emailRe.test(clientData.email));
+                        const inputType =
+                          name === "email"
+                            ? "email"
+                            : name === "telefon"
+                              ? "tel"
+                              : "text";
+                        const onKey =
+                          name === "telefon"
+                            ? (e) => {
+                                if (
+                                  e.key.length === 1 &&
+                                  !/[\d+\s\-()]/.test(e.key) &&
+                                  !e.ctrlKey &&
+                                  !e.metaKey
+                                )
+                                  e.preventDefault();
+                              }
+                            : undefined;
+                        const onChange =
+                          name === "telefon"
+                            ? (e) => {
+                                const v = e.target.value.replace(
+                                  /[^\d+\s\-()]/g,
+                                  "",
+                                );
+                                handleClientChange({
+                                  target: { name, value: v },
+                                });
+                              }
+                            : handleClientChange;
+                        return (
+                          <div
+                            className={`field ${span === 2 ? "col-span-2" : ""}`}
+                            key={name}
+                          >
+                            <label>
+                              {label}{" "}
+                              {required && <span className="req">●</span>}
+                            </label>
+                            <input
+                              type={inputType}
+                              name={name}
+                              value={clientData[name]}
+                              onChange={onChange}
+                              onKeyDown={onKey}
+                              inputMode={name === "telefon" ? "tel" : undefined}
+                              style={{
+                                borderColor: invalid
+                                  ? "var(--danger)"
+                                  : undefined,
+                              }}
+                            />
+                            {invalid && (
+                              <span
+                                className="hint"
+                                style={{ color: "var(--danger)" }}
+                              >
+                                Format invalid
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* ANEXA STEP */}
+              {isAnnex && (
+                <section className="card">
+                  <div className="card-strip">
+                    <div className="strip-cell">
+                      <div className="cell-label">Contract</div>
+                      <div className="cell-value mono">
+                        {clientData.numarContract || "—"}
+                      </div>
+                    </div>
+                    <div className="strip-cell">
+                      <div className="cell-label">Anexă nr.</div>
+                      <div className="cell-value">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={currentAnexa.eventData.numarAnexa}
+                          placeholder={anexaNr(
+                            clientData.anexaStart,
+                            "",
+                            anexaIdx,
+                          )}
+                          onChange={(e) =>
+                            updateAnexa(
+                              anexaIdx,
+                              "eventData",
+                              "numarAnexa",
+                              e.target.value,
+                            )
+                          }
+                          style={{
+                            width: 48,
+                            padding: 0,
+                            border: "none",
+                            background: "transparent",
+                            font: "inherit",
+                            fontWeight: 700,
+                            color: "inherit",
+                            outline: "none",
+                          }}
+                          title="Gol = numerotare automată în ordine"
+                        />
+                        {!currentAnexa.eventData.numarAnexa && (
+                          <>
+                            {" "}
+                            <span style={{ color: "var(--muted)" }}>auto</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="strip-cell wide">
+                      <div className="cell-label">Emitere anexă</div>
+                      <div className="cell-value">
+                        <strong>
+                          {currentAnexa.eventData.dataEmitere || todayDmy()}
+                        </strong>
+                        {!currentAnexa.eventData.dataEmitere && (
+                          <>
+                            {" "}
+                            ·{" "}
+                            <span style={{ color: "var(--muted)" }}>
+                              implicit (astăzi)
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        marginLeft: "auto",
+                        display: "flex",
+                        gap: 8,
+                        alignItems: "center",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="strip-action"
+                        onClick={handleSetAnexaStart}
+                        title="Numărul de la care încep anexele acestui contract"
+                      >
+                        Start nr. anexe
+                      </button>
+                      <button
+                        type="button"
+                        className="strip-action with-date"
+                        onClick={(e) => {
+                          const inp =
+                            e.currentTarget.querySelector('input[type="date"]');
+                          if (inp?.showPicker) inp.showPicker();
+                          else inp?.focus();
+                        }}
+                      >
+                        <span>
+                          <Icon name="calendar" />
+                        </span>
+                        <span>Schimbă emiterea</span>
+                        <input
+                          type="date"
+                          tabIndex={-1}
+                          value={(() => {
+                            const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(
+                              currentAnexa.eventData.dataEmitere || "",
+                            );
+                            return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+                          })()}
+                          onChange={(e) =>
+                            updateAnexa(
+                              anexaIdx,
+                              "eventData",
+                              "dataEmitere",
+                              normalizeDate(e.target.value),
+                            )
+                          }
+                        />
+                      </button>
+                      {currentAnexa.eventData.dataEmitere && (
+                        <button
+                          type="button"
+                          className="strip-action"
+                          onClick={() =>
+                            updateAnexa(
+                              anexaIdx,
+                              "eventData",
+                              "dataEmitere",
+                              "",
+                            )
+                          }
+                          title="Revino la data contractului"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="section">
+                    <div className="section-head">
+                      <span className="idx">02 · A{anexaIdx + 1}</span>
+                      <h2>Detalii eveniment</h2>
+                    </div>
+
+                    <div style={{ marginBottom: 14 }}>
+                      <div className="field">
+                        <label>
+                          Scop / nume eveniment <span className="req">●</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={currentAnexa.eventData.scop}
+                          onChange={(e) =>
+                            updateAnexa(
+                              anexaIdx,
+                              "eventData",
+                              "scop",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                      <label
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          marginTop: 8,
+                          cursor: "pointer",
+                          fontSize: 13,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!currentAnexa.eventData.includeVideo}
+                          onChange={(e) =>
+                            updateAnexa(
+                              anexaIdx,
+                              "eventData",
+                              "includeVideo",
+                              e.target.checked,
+                            )
+                          }
+                        />
+                        Include servicii videografice
+                      </label>
+                    </div>
+
+                    <div className="grid-3">
+                      {dateField(
+                        currentAnexa.eventData.dataEveniment,
+                        (e) =>
+                          updateAnexa(
+                            anexaIdx,
+                            "eventData",
+                            "dataEveniment",
+                            e.target.value,
+                          ),
+                        "Data evenimentului",
+                      )}
+
+                      <div
+                        className="field col-span-2"
+                        style={{ position: "relative" }}
+                      >
+                        <label>
+                          Locație <span className="req">●</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={currentAnexa.eventData.locatie}
+                          onChange={(e) =>
+                            onLocationChange(anexaIdx, e.target.value)
+                          }
+                          onBlur={(e) => {
+                            saveLocation(e.target.value);
+                            setTimeout(() => setLocationSuggestions([]), 200);
+                          }}
+                        />
+                        {locationSuggestions.length > 0 && (
+                          <ul className="suggest">
+                            {locationSuggestions.map((l) => (
+                              <li
+                                key={l}
+                                onMouseDown={() => {
+                                  updateAnexa(
+                                    anexaIdx,
+                                    "eventData",
+                                    "locatie",
+                                    l,
+                                  );
+                                  saveLocation(l);
+                                  setLocationSuggestions([]);
+                                }}
+                              >
+                                {l}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      <div className="field">
+                        <label>Zile până la predare</label>
+                        <input
+                          type="number"
+                          value={currentAnexa.eventData.zilePredare}
+                          onChange={(e) =>
+                            updateAnexa(
+                              anexaIdx,
+                              "eventData",
+                              "zilePredare",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="field col-span-2">
+                        <label>Data predare (calculat)</label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={
+                            calcDataPredare(
+                              currentAnexa.eventData.dataEveniment,
+                              currentAnexa.eventData.zilePredare,
+                            ) || "—"
+                          }
+                          style={{
+                            background: "#efeae0",
+                            color: "var(--ink-2)",
+                          }}
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label>Zile calendaristice încasare</label>
+                        <input
+                          type="number"
+                          value={currentAnexa.eventData.zileIncasare ?? "10"}
+                          onChange={(e) =>
+                            updateAnexa(
+                              anexaIdx,
+                              "eventData",
+                              "zileIncasare",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="field col-span-3">
+                        <label>Observații / clauze particulare</label>
+                        <textarea
+                          rows={3}
+                          value={currentAnexa.eventData.observatii || ""}
+                          onChange={(e) =>
+                            updateAnexa(
+                              anexaIdx,
+                              "eventData",
+                              "observatii",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="section">
+                    <div className="section-head">
+                      <span className="idx">03 · A{anexaIdx + 1}</span>
+                      <h2>Buget</h2>
+                      <span className="helper">
+                        Sumele se introduc în LEI, fără TVA.
+                      </span>
+                    </div>
+
+                    <div className="bnr-conv">
+                      <div className="field" style={{ minWidth: 90 }}>
+                        <label>Monedă sursă</label>
+                        <select
+                          value={bnrConv.currency}
+                          onChange={(e) =>
+                            setBnrConv((s) => ({
+                              ...s,
+                              currency: e.target.value,
+                              rate: null,
+                              error: "",
+                            }))
+                          }
+                        >
+                          {["RON", "EUR", "USD", "GBP", "CHF"].map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
                           ))}
-                        </ul>
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={bnrConv.loading}
+                        onClick={async () => {
+                          const refDate =
+                            currentAnexa.eventData.dataEveniment &&
+                            isValidDmy(currentAnexa.eventData.dataEveniment)
+                              ? currentAnexa.eventData.dataEveniment
+                              : clientData.dataContract;
+                          setBnrConv((s) => ({
+                            ...s,
+                            loading: true,
+                            error: "",
+                          }));
+                          try {
+                            const r = await fetchBnrRate(
+                              bnrConv.currency,
+                              refDate,
+                            );
+                            setBnrConv((s) => ({
+                              ...s,
+                              loading: false,
+                              rate: r.rate,
+                              date: r.date,
+                            }));
+                          } catch (e) {
+                            setBnrConv((s) => ({
+                              ...s,
+                              loading: false,
+                              error: e.message,
+                            }));
+                          }
+                        }}
+                      >
+                        {bnrConv.loading ? "..." : `Adu curs BNR`}
+                      </button>
+                      {bnrConv.rate && (
+                        <>
+                          <span className="bnr-rate">
+                            1 {bnrConv.currency} ={" "}
+                            <strong>{bnrConv.rate.toFixed(4)}</strong> RON
+                            <span className="bnr-date"> · {bnrConv.date}</span>
+                          </span>
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={async () => {
+                              if (
+                                !(await confirm(
+                                  `Multiplici toate valorile bugetului cu ${bnrConv.rate.toFixed(4)}?`,
+                                ))
+                              )
+                                return;
+                              const fields = [
+                                "valoareServicii",
+                                "transport",
+                                "diurna",
+                                "cazare",
+                                "alteCheltuieli",
+                              ];
+                              setAnexe((prev) =>
+                                prev.map((a, i) => {
+                                  if (i !== anexaIdx) return a;
+                                  const nb = { ...a.budgetData };
+                                  fields.forEach((f) => {
+                                    const v = Number(nb[f]);
+                                    if (v)
+                                      nb[f] = String(
+                                        Math.round(v * bnrConv.rate),
+                                      );
+                                  });
+                                  return { ...a, budgetData: nb };
+                                }),
+                              );
+                            }}
+                          >
+                            Aplică × curs
+                          </button>
+                        </>
+                      )}
+                      {bnrConv.error && (
+                        <span className="bnr-error">{bnrConv.error}</span>
                       )}
                     </div>
 
-                    <div className="field">
-                      <label>Zile până la predare</label>
-                      <input
-                        type="number"
-                        value={currentAnexa.eventData.zilePredare}
-                        onChange={(e) => updateAnexa(anexaIdx, "eventData", "zilePredare", e.target.value)}
-                      />
+                    <div className="grid-2">
+                      {[
+                        [
+                          "valoareServicii",
+                          "Valoare servicii profesionale",
+                          true,
+                        ],
+                        ["transport", "Cheltuieli transport"],
+                        ["diurna", "Diurnă"],
+                        ["cazare", "Cheltuieli cazare"],
+                        ["alteCheltuieli", "Alte cheltuieli"],
+                      ].map(([name, label, required]) => (
+                        <div className="field" key={name}>
+                          <label>
+                            {label} {required && <span className="req">●</span>}
+                          </label>
+                          <input
+                            type="number"
+                            value={currentAnexa.budgetData[name]}
+                            onChange={(e) =>
+                              updateAnexa(
+                                anexaIdx,
+                                "budgetData",
+                                name,
+                                e.target.value,
+                              )
+                            }
+                            style={{
+                              fontFamily: "Geist Mono, monospace",
+                              textAlign: "right",
+                            }}
+                          />
+                        </div>
+                      ))}
                     </div>
 
-                    <div className="field col-span-2">
-                      <label>Data predare (calculat)</label>
-                      <input
-                        type="text"
-                        readOnly
-                        value={calcDataPredare(currentAnexa.eventData.dataEveniment, currentAnexa.eventData.zilePredare) || "—"}
-                        style={{ background: "#efeae0", color: "var(--ink-2)" }}
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label>Zile lucrătoare încasare</label>
-                      <input
-                        type="number"
-                        value={currentAnexa.eventData.zileIncasare ?? "10"}
-                        onChange={(e) => updateAnexa(anexaIdx, "eventData", "zileIncasare", e.target.value)}
-                      />
-                    </div>
-
-                    <div className="field col-span-3">
-                      <label>Observații / clauze particulare</label>
-                      <textarea
-                        rows={3}
-                        value={currentAnexa.eventData.observatii || ""}
-                        onChange={(e) => updateAnexa(anexaIdx, "eventData", "observatii", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="section">
-                  <div className="section-head">
-                    <span className="idx">03 · A{anexaIdx + 1}</span>
-                    <h2>Buget</h2>
-                    <span className="helper">Sumele se introduc în LEI, fără TVA.</span>
-                  </div>
-
-                  <div className="bnr-conv">
-                    <div className="field" style={{ minWidth: 90 }}>
-                      <label>Monedă sursă</label>
-                      <select
-                        value={bnrConv.currency}
-                        onChange={(e) => setBnrConv((s) => ({ ...s, currency: e.target.value, rate: null, error: "" }))}
+                    <div className="total-box">
+                      <div
+                        style={{
+                          fontSize: 11,
+                          textTransform: "uppercase",
+                          letterSpacing: ".12em",
+                          color: "var(--muted)",
+                        }}
                       >
-                        {["RON", "EUR", "USD", "GBP", "CHF"].map((c) => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn"
-                      disabled={bnrConv.loading}
-                      onClick={async () => {
-                        const refDate = currentAnexa.eventData.dataEveniment && isValidDmy(currentAnexa.eventData.dataEveniment)
-                          ? currentAnexa.eventData.dataEveniment
-                          : clientData.dataContract;
-                        setBnrConv((s) => ({ ...s, loading: true, error: "" }));
-                        try {
-                          const r = await fetchBnrRate(bnrConv.currency, refDate);
-                          setBnrConv((s) => ({ ...s, loading: false, rate: r.rate, date: r.date }));
-                        } catch (e) {
-                          setBnrConv((s) => ({ ...s, loading: false, error: e.message }));
-                        }
-                      }}
-                    >
-                      {bnrConv.loading ? "..." : `Adu curs BNR`}
-                    </button>
-                    {bnrConv.rate && (
-                      <>
-                        <span className="bnr-rate">
-                          1 {bnrConv.currency} = <strong>{bnrConv.rate.toFixed(4)}</strong> RON
-                          <span className="bnr-date"> · {bnrConv.date}</span>
-                        </span>
-                        <button
-                          type="button"
-                          className="btn"
-                          onClick={async () => {
-                            if (!(await confirm(`Multiplici toate valorile bugetului cu ${bnrConv.rate.toFixed(4)}?`))) return;
-                            const fields = ["valoareServicii", "transport", "diurna", "cazare", "alteCheltuieli"];
-                            setAnexe((prev) => prev.map((a, i) => {
-                              if (i !== anexaIdx) return a;
-                              const nb = { ...a.budgetData };
-                              fields.forEach((f) => {
-                                const v = Number(nb[f]);
-                                if (v) nb[f] = String(Math.round(v * bnrConv.rate));
-                              });
-                              return { ...a, budgetData: nb };
-                            }));
-                          }}
-                        >Aplică × curs</button>
-                      </>
-                    )}
-                    {bnrConv.error && <span className="bnr-error">{bnrConv.error}</span>}
-                  </div>
-
-                  <div className="grid-2">
-                    {[
-                      ["valoareServicii", "Valoare servicii profesionale", true],
-                      ["transport", "Cheltuieli transport"],
-                      ["diurna", "Diurnă"],
-                      ["cazare", "Cheltuieli cazare"],
-                      ["alteCheltuieli", "Alte cheltuieli"],
-                    ].map(([name, label, required]) => (
-                      <div className="field" key={name}>
-                        <label>{label} {required && <span className="req">●</span>}</label>
-                        <input
-                          type="number"
-                          value={currentAnexa.budgetData[name]}
-                          onChange={(e) => updateAnexa(anexaIdx, "budgetData", name, e.target.value)}
-                          style={{ fontFamily: "Geist Mono, monospace", textAlign: "right" }}
-                        />
+                        Total anexa nr. {anexaIdx + 1}
                       </div>
-                    ))}
-                  </div>
-
-                  <div className="total-box">
-                    <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".12em", color: "var(--muted)" }}>
-                      Total anexa nr. {anexaIdx + 1}
+                      <h3>
+                        {fmt(sumBudget(currentAnexa.budgetData))}{" "}
+                        <span
+                          style={{
+                            fontSize: 13,
+                            color: "var(--muted)",
+                            fontFamily: "Geist Mono, monospace",
+                          }}
+                        >
+                          LEI
+                        </span>
+                      </h3>
                     </div>
-                    <h3>{fmt(sumBudget(currentAnexa.budgetData))} <span style={{ fontSize: 13, color: "var(--muted)", fontFamily: "Geist Mono, monospace" }}>LEI</span></h3>
+                  </div>
+                </section>
+              )}
+
+              {/* BIBLIOTECĂ (Firestore) */}
+              {isSaved && (
+                <Biblioteca
+                  onOpen={handleOpenFromFirestore}
+                  tab={bibliotecaTab}
+                  onTabChange={(t) =>
+                    setStep(
+                      t === "clienti"
+                        ? "biblioteca-clienti"
+                        : t === "modele"
+                          ? "biblioteca-modele"
+                          : "biblioteca-contracte",
+                    )
+                  }
+                  onOpenBlank={handleShowBlankTemplate}
+                  onUseModel={(m) => {
+                    handleNewContract();
+                    setClientData((prev) => ({
+                      ...prev,
+                      cui: m.cui || "",
+                      numeBeneficiar: m.numeBeneficiar || "",
+                      clauzeCustom: m.clauzeCustom || {},
+                    }));
+                    setAnexe((prev) => {
+                      const next = [...prev];
+                      if (next[0]) {
+                        next[0] = {
+                          eventData: {
+                            ...next[0].eventData,
+                            ...(m.defaultEvent || {}),
+                          },
+                          budgetData: {
+                            ...next[0].budgetData,
+                            ...(m.defaultBudget || {}),
+                          },
+                        };
+                      }
+                      return next;
+                    });
+                    setStep("client");
+                  }}
+                />
+              )}
+
+              {/* ERRORS */}
+              {errors.length > 0 && (
+                <div className="errors">
+                  <strong>Verifică:</strong>
+                  <ul>
+                    {errors.map((e, i) => (
+                      <li key={i}>{e}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* ACTION BAR */}
+              {!isSaved && (
+                <div className="actions">
+                  <button className="btn" onClick={resetAll}>
+                    Reset formular
+                  </button>
+                  <div style={{ flex: 1 }} />
+                  <button className="btn" onClick={handleSaveToDb}>
+                    <Icon name="save" />{" "}
+                    {currentContractId ? "Actualizează" : "Salvează"} în DB
+                  </button>
+                  {isClient && (
+                    <button
+                      className="generate-btn"
+                      onClick={() => handleGenerate("contract")}
+                    >
+                      Generează contract →
+                    </button>
+                  )}
+                  {isAnnex && (
+                    <button
+                      className="generate-btn"
+                      onClick={() => handleGenerate(anexaIdx)}
+                    >
+                      Generează Anexa {anexaIdx + 1} →
+                    </button>
+                  )}
+                  {anexe.length > 0 && (
+                    <button
+                      className="generate-btn"
+                      onClick={() => handleGenerate("all")}
+                    >
+                      Generează tot →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT RAIL */}
+            {!isSaved && (
+              <aside className="rail">
+                <div className="rail-card">
+                  <h3>
+                    Total general{" "}
+                    <span className="small">
+                      {anexe.length} {anexe.length === 1 ? "anexă" : "anexe"}
+                    </span>
+                  </h3>
+                  <div className="summary-grand">
+                    <div className="label">Valoare contract</div>
+                    <div className="value">
+                      {fmt(totalGeneral)}
+                      <span className="ccy">LEI</span>
+                    </div>
+                  </div>
+                  <div className="summary-line">
+                    <span>Servicii profesionale</span>
+                    <span className="v">
+                      {fmt(totalsByLine.valoareServicii)}
+                    </span>
+                  </div>
+                  <div className="summary-line">
+                    <span>Transport</span>
+                    <span className="v">{fmt(totalsByLine.transport)}</span>
+                  </div>
+                  <div className="summary-line">
+                    <span>Diurnă</span>
+                    <span className="v">{fmt(totalsByLine.diurna)}</span>
+                  </div>
+                  <div className="summary-line">
+                    <span>Cazare</span>
+                    <span className="v">{fmt(totalsByLine.cazare)}</span>
+                  </div>
+                  <div className="summary-line faint">
+                    <span>Alte cheltuieli</span>
+                    <span className="v">
+                      {fmt(totalsByLine.alteCheltuieli)}
+                    </span>
+                  </div>
+                  <div className="summary-line tva">
+                    <span>TVA (informativ)</span>
+                    <span className="v muted">— neplătitor</span>
+                  </div>
+                  <div className="summary-line invoice">
+                    <span>De facturat</span>
+                    <span className="v">
+                      <strong>{fmt(totalGeneral)}</strong> LEI
+                    </span>
                   </div>
                 </div>
-              </section>
-            )}
 
-            {/* BIBLIOTECĂ (Firestore) */}
-            {isSaved && <Biblioteca
-              onOpen={handleOpenFromFirestore}
-              tab={bibliotecaTab}
-              onTabChange={(t) => setStep(t === "clienti" ? "biblioteca-clienti" : t === "modele" ? "biblioteca-modele" : "biblioteca-contracte")}
-              onOpenBlank={handleShowBlankTemplate}
-              onUseModel={(m) => {
-                handleNewContract();
-                setClientData((prev) => ({
-                  ...prev,
-                  cui: m.cui || "",
-                  numeBeneficiar: m.numeBeneficiar || "",
-                  clauzeCustom: m.clauzeCustom || {},
-                }));
-                setAnexe((prev) => {
-                  const next = [...prev];
-                  if (next[0]) {
-                    next[0] = {
-                      eventData: { ...next[0].eventData, ...(m.defaultEvent || {}) },
-                      budgetData: { ...next[0].budgetData, ...(m.defaultBudget || {}) },
-                    };
-                  }
-                  return next;
-                });
-                setStep("client");
-              }}
-            />}
+                <div className="rail-card">
+                  <h3>
+                    Pregătire pentru semnare{" "}
+                    <span className="small">
+                      {doneCount} / {checklist.length}
+                    </span>
+                  </h3>
+                  <ul
+                    style={{
+                      listStyle: "none",
+                      padding: 0,
+                      margin: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    {checklist.map((c, i) => (
+                      <li
+                        key={i}
+                        style={{
+                          display: "flex",
+                          gap: 10,
+                          fontSize: 13,
+                          color: c.ok ? "var(--muted)" : "var(--ink-2)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 3,
+                            border: c.ok
+                              ? "1px solid var(--accent)"
+                              : "1px solid var(--line-2)",
+                            background: c.ok ? "var(--accent)" : "var(--paper)",
+                            color: "#fff",
+                            display: "grid",
+                            placeItems: "center",
+                            fontSize: 10,
+                            flexShrink: 0,
+                            marginTop: 2,
+                          }}
+                        >
+                          {c.ok ? "✓" : ""}
+                        </span>
+                        <span
+                          style={{
+                            textDecorationLine: c.ok ? "line-through" : "none",
+                            textDecorationColor: "var(--line-2)",
+                          }}
+                        >
+                          {c.text}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-            {/* ERRORS */}
-            {errors.length > 0 && (
-              <div className="errors">
-                <strong>Verifică:</strong>
-                <ul>
-                  {errors.map((e, i) => (<li key={i}>{e}</li>))}
-                </ul>
-              </div>
-            )}
-
-            {/* ACTION BAR */}
-            {!isSaved && (
-              <div className="actions">
-                <button className="btn" onClick={resetAll}>Reset formular</button>
-                <div style={{ flex: 1 }} />
-                <button className="btn" onClick={handleSaveToDb}>
-                  <Icon name="save" /> {currentContractId ? "Actualizează" : "Salvează"} în DB
-                </button>
-                {isClient && (
-                  <button className="generate-btn" onClick={() => handleGenerate("contract")}>
-                    Generează contract →
-                  </button>
-                )}
-                {isAnnex && (
-                  <button className="generate-btn" onClick={() => handleGenerate(anexaIdx)}>
-                    Generează Anexa {anexaIdx + 1} →
-                  </button>
-                )}
-                {anexe.length > 0 && (
-                  <button className="generate-btn" onClick={() => handleGenerate("all")}>
-                    Generează tot →
-                  </button>
-                )}
-              </div>
+                <div className="rail-card">
+                  <h3>
+                    Export <span className="small">finalizare</span>
+                  </h3>
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                  >
+                    <button
+                      className="btn"
+                      style={{ justifyContent: "space-between", width: "100%" }}
+                      onClick={() => handleGenerate("all")}
+                    >
+                      <span>
+                        <Icon name="document" /> Preview & Print PDF
+                      </span>
+                      <span style={{ color: "var(--muted)" }}>→</span>
+                    </button>
+                    <button
+                      className="btn"
+                      style={{ justifyContent: "space-between", width: "100%" }}
+                      onClick={onExport}
+                    >
+                      <span>
+                        <Icon name="download" /> Export JSON
+                      </span>
+                      <span style={{ color: "var(--muted)" }}>→</span>
+                    </button>
+                    <button
+                      className="btn"
+                      style={{ justifyContent: "space-between", width: "100%" }}
+                      onClick={sendEmail}
+                    >
+                      <span>
+                        <Icon name="mail" /> Trimite email beneficiar
+                      </span>
+                      <span style={{ color: "var(--muted)" }}>→</span>
+                    </button>
+                  </div>
+                </div>
+              </aside>
             )}
           </div>
-
-          {/* RIGHT RAIL */}
-          {!isSaved && (
-            <aside className="rail">
-              <div className="rail-card">
-                <h3>Total general <span className="small">{anexe.length} {anexe.length === 1 ? "anexă" : "anexe"}</span></h3>
-                <div className="summary-grand">
-                  <div className="label">Valoare contract</div>
-                  <div className="value">{fmt(totalGeneral)}<span className="ccy">LEI</span></div>
-                </div>
-                <div className="summary-line"><span>Servicii profesionale</span><span className="v">{fmt(totalsByLine.valoareServicii)}</span></div>
-                <div className="summary-line"><span>Transport</span><span className="v">{fmt(totalsByLine.transport)}</span></div>
-                <div className="summary-line"><span>Diurnă</span><span className="v">{fmt(totalsByLine.diurna)}</span></div>
-                <div className="summary-line"><span>Cazare</span><span className="v">{fmt(totalsByLine.cazare)}</span></div>
-                <div className="summary-line faint"><span>Alte cheltuieli</span><span className="v">{fmt(totalsByLine.alteCheltuieli)}</span></div>
-                <div className="summary-line tva"><span>TVA (informativ)</span><span className="v muted">— neplătitor</span></div>
-                <div className="summary-line invoice"><span>De facturat</span><span className="v"><strong>{fmt(totalGeneral)}</strong> LEI</span></div>
-              </div>
-
-              <div className="rail-card">
-                <h3>Pregătire pentru semnare <span className="small">{doneCount} / {checklist.length}</span></h3>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-                  {checklist.map((c, i) => (
-                    <li key={i} style={{ display: "flex", gap: 10, fontSize: 13, color: c.ok ? "var(--muted)" : "var(--ink-2)" }}>
-                      <span style={{
-                        width: 16, height: 16, borderRadius: 3,
-                        border: c.ok ? "1px solid var(--accent)" : "1px solid var(--line-2)",
-                        background: c.ok ? "var(--accent)" : "var(--paper)",
-                        color: "#fff",
-                        display: "grid", placeItems: "center",
-                        fontSize: 10, flexShrink: 0, marginTop: 2,
-                      }}>{c.ok ? "✓" : ""}</span>
-                      <span style={{ textDecorationLine: c.ok ? "line-through" : "none", textDecorationColor: "var(--line-2)" }}>
-                        {c.text}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="rail-card">
-                <h3>Export <span className="small">finalizare</span></h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <button className="btn" style={{ justifyContent: "space-between", width: "100%" }} onClick={() => handleGenerate("all")}>
-                    <span><Icon name="document" /> Preview & Print PDF</span>
-                    <span style={{ color: "var(--muted)" }}>→</span>
-                  </button>
-                  <button className="btn" style={{ justifyContent: "space-between", width: "100%" }} onClick={onExport}>
-                    <span><Icon name="download" /> Export JSON</span>
-                    <span style={{ color: "var(--muted)" }}>→</span>
-                  </button>
-                  <button className="btn" style={{ justifyContent: "space-between", width: "100%" }} onClick={sendEmail}>
-                    <span><Icon name="mail" /> Trimite email beneficiar</span>
-                    <span style={{ color: "var(--muted)" }}>→</span>
-                  </button>
-                </div>
-              </div>
-            </aside>
-          )}
-        </div>
         )}
       </main>
     </div>
